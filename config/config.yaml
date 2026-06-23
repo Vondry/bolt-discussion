@@ -1,0 +1,28 @@
+# Bolt Discussion configuration.
+# Copied to config/extensions/bolt-discussion.yaml on first run; edit it there.
+
+# How freshly-posted comments are handled before they appear publicly.
+#   auto  - comments are published immediately
+#   queue - anonymous comments are held as "pending" until a logged-in user
+#           approves them; logged-in users' comments always auto-publish
+moderation: auto
+
+# Polling interval for the frontend widget, in milliseconds. 0 disables polling.
+poll_interval: 10000
+
+# Number of root comments fetched per page (newest first); "Load more" reveals
+# older ones. Replies are always loaded with their root. Clamped to 1..100.
+page_size: 10
+
+# Reactions
+reactions_enabled: true
+reactions: ['👍', '❤️', '😂', '🎉', '😮']
+
+# Threaded replies (always limited to one level deep)
+replies_enabled: true
+
+# Validation / anti-spam
+max_length: 2000
+require_name: true
+spam_regex: ''          # if set, bodies matching this regex are marked as spam
+rate_limit_seconds: 10  # min seconds between two anonymous posts from one IP; 0 disables

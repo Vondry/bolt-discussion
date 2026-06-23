@@ -1,0 +1,25 @@
+{
+  "name": "bolt-discussion-assets",
+  "author": "Tomáš Vondráček",
+  "description": "Frontend assets for the Bolt Discussion extension",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "encore dev",
+    "watch": "encore dev --watch",
+    "build": "encore production --progress",
+    "test:js": "node --test tests/js/*.test.mjs"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17",
+    "@babel/preset-env": "^7.16",
+    "@symfony/webpack-encore": "^6.0",
+    "core-js": "^3.36",
+    "sass": "^1.71",
+    "sass-loader": "^16.0",
+    "webpack": "^5.72",
+    "webpack-cli": "^6.0"
+  }
+}

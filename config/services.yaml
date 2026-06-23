@@ -1,0 +1,16 @@
+# Copied to config/packages/extension_bolt-discussion.yaml by `extensions:configure`.
+#
+# Most of the extension's classes are auto-registered (autowired + autoconfigured)
+# by Bolt's generated config/services_bolt.yaml. We only need to add tags that
+# Bolt applies through a file-scoped `_instanceof` (which does not reach the
+# generated file): the backend menu integration.
+
+# Register the extension's translation catalogs (domain: bolt_discussion).
+framework:
+  translator:
+    paths: ['%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/translations']
+
+services:
+  BoltDiscussion\Menu\DiscussionMenu:
+    autowire: true
+    tags: ['bolt.extension_backend_menu']

@@ -1,0 +1,18 @@
+parameters:
+    level: 8
+
+    paths:
+        - src
+
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: true
+
+    # Doctrine assigns generated IDs after persistence; static analysis cannot
+    # observe that reflection-based write.
+    ignoreErrors:
+        -
+            identifier: property.unusedType
+            path: src/Entity/DiscussionComment.php
+        -
+            identifier: property.unusedType
+            path: src/Entity/DiscussionReaction.php

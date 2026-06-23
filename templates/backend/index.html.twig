@@ -1,0 +1,49 @@
+{% extends '@bolt/_base/layout.html.twig' %}
+{% import '@bolt/_macro/_macro.html.twig' as macro %}
+{% set d_domain = 'bolt_discussion' %}
+
+{% block title %}
+    {{ macro.icon('comments') }} {{ 'Discussion'|trans({}, d_domain) }}
+{% endblock title %}
+
+{% block main %}
+    <h1>{{ macro.icon('comments') }} {{ 'Discussions'|trans({}, d_domain) }}</h1>
+
+    {% if discussions is empty %}
+        <p>{{ 'No comments have been posted yet.'|trans({}, d_domain) }}</p>
+    {% else %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>{{ 'Reference'|trans({}, d_domain) }}</th>
+                    <th class="text-right">{{ 'Comments'|trans({}, d_domain) }}</th>
+                    <th class="text-right">{{ 'Pending'|trans({}, d_domain) }}</th>
+                    <th>{{ 'Last activity'|trans({}, d_domain) }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in discussions %}
+                    <tr>
+                        <td><code>{{ d.reference }}</code></td>
+                        <td class="text-right">{{ d.total }}</td>
+                        <td class="text-right">
+                            {% if d.pending > 0 %}
+                                <span class="badge badge-warning">{{ d.pending }}</span>
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
+                        <td>{{ d.last|date('Y-m-d H:i') }}</td>
+                        <td class="text-right">
+                            <a class="btn btn-sm btn-primary"
+                               href="{{ path('bolt_discussion_admin_thread', { reference: d.reference }) }}">
+                                {{ 'View'|trans({}, d_domain) }}
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock main %}

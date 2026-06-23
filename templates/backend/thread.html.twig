@@ -1,0 +1,68 @@
+{% extends '@bolt/_base/layout.html.twig' %}
+{% import '@bolt/_macro/_macro.html.twig' as macro %}
+{% set d_domain = 'bolt_discussion' %}
+
+{% block title %}
+    {{ macro.icon('comments') }} {{ 'Discussion'|trans({}, d_domain) }}: {{ reference }}
+{% endblock title %}
+
+{% block main %}
+    <p><a href="{{ path('bolt_discussion_admin') }}">&larr; {{ 'All discussions'|trans({}, d_domain) }}</a></p>
+    <h1>{{ macro.icon('comments') }} <code>{{ reference }}</code></h1>
+
+    {% if comments is empty %}
+        <p>{{ 'No comments.'|trans({}, d_domain) }}</p>
+    {% else %}
+        {% for comment in comments %}
+            <div class="card mb-2 {{ comment.isReply ? 'ml-4' : '' }}">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ comment.authorName }}</strong>
+                            {% if comment.author %}<span class="badge badge-info">{{ 'user'|trans({}, d_domain) }}</span>{% endif %}
+                            {% if comment.isReply %}<span class="badge badge-light">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
+                            <span class="badge badge-{{ comment.status.value == 'published' ? 'success' : (comment.status.value == 'pending' ? 'warning' : 'secondary') }}">
+                                {{ comment.status.label|trans({}, d_domain) }}
+                            </span>
+                            <small class="text-muted ml-2">{{ comment.createdAt|date('Y-m-d H:i') }}</small>
+                        </div>
+                        <div>
+                            {% set summary = reactions[comment.id] ?? {} %}
+                            {% for emoji, data in summary %}
+                                <span class="mr-1">{{ emoji }} {{ data.count }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mt-1">{{ comment.body|nl2br }}</div>
+                    <div class="mt-2">
+                        {% if comment.status.value != 'deleted' %}
+                            <form method="post" class="d-inline"
+                                  action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'delete' }) }}"
+                                  onsubmit="return confirm('{{ 'Delete this comment?'|trans({}, d_domain)|e('js') }}');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
+                                <input type="hidden" name="reference" value="{{ reference }}">
+                                <button class="btn btn-sm btn-outline-danger">{{ 'Delete'|trans({}, d_domain) }}</button>
+                            </form>
+                        {% endif %}
+                        {% if comment.status.value == 'pending' %}
+                            <form method="post" class="d-inline"
+                                  action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'restore' }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
+                                <input type="hidden" name="reference" value="{{ reference }}">
+                                <button class="btn btn-sm btn-outline-success">{{ 'Approve'|trans({}, d_domain) }}</button>
+                            </form>
+                        {% endif %}
+                        {% if comment.status.value != 'spam' %}
+                            <form method="post" class="d-inline"
+                                  action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'spam' }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
+                                <input type="hidden" name="reference" value="{{ reference }}">
+                                <button class="btn btn-sm btn-outline-secondary">{{ 'Mark spam'|trans({}, d_domain) }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock main %}

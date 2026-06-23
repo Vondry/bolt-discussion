@@ -1,0 +1,478 @@
+/**
+ * Bolt Discussion — frontend styles.
+ *
+ * A modern, quiet comment thread: colour-coded avatars, relative timestamps,
+ * reaction chips with a "+" picker, and collapsible reply threads with a
+ * connector line. EVERY visual value resolves to a `--bd-*` custom property
+ * declared on `.bolt-discussion`, so a host project re-themes the whole widget
+ * by re-declaring those variables (e.g. mapping them to its design tokens).
+ *
+ * Override either by re-declaring variables:
+ *     .bolt-discussion { --bd-color-accent: #e11; --bd-radius: 4px; }
+ * or by targeting the BEM classes directly for structural tweaks.
+ */
+
+.bolt-discussion {
+    /* Typography */
+    --bd-font: inherit;
+    --bd-font-size: 0.95rem;
+    --bd-font-size-sm: 0.8rem;
+    --bd-line-height: 1.6;
+
+    /* Palette */
+    --bd-color-text: #0f172a;
+    --bd-color-muted: #64748b;
+    --bd-color-surface: #ffffff;
+    --bd-color-surface-alt: #f1f5f9;
+    --bd-color-border: #e2e8f0;
+    --bd-color-accent: #6366f1;
+    --bd-color-accent-contrast: #ffffff;
+    --bd-color-accent-soft: rgba(99, 102, 241, 0.12);
+    --bd-color-danger: #ef4444;
+    --bd-color-pending-bg: #fef3c7;
+    --bd-color-pending-text: #92400e;
+
+    /* Shape */
+    --bd-radius-sm: 8px;
+    --bd-radius: 12px;
+    --bd-radius-lg: 16px;
+    --bd-radius-pill: 999px;
+
+    /* Rhythm & depth */
+    --bd-row-gap: 0.75rem;
+    --bd-stack-gap: 1.4rem;
+    --bd-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.05);
+    --bd-ring: 0 0 0 3px var(--bd-color-accent-soft);
+    --bd-transition: 150ms ease;
+
+    /* Avatars (hue is set per-author inline) */
+    --bd-avatar-size: 40px;
+    --bd-avatar-radius: 50%;
+    --bd-avatar-sat: 58%;
+    --bd-avatar-light: 48%;
+    --bd-avatar-text: #ffffff;
+
+    /* Reply thread connector */
+    --bd-thread-line: var(--bd-color-border);
+    --bd-thread-width: 2px;
+
+    font-family: var(--bd-font);
+    font-size: var(--bd-font-size);
+    line-height: var(--bd-line-height);
+    color: var(--bd-color-text);
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* ----- title / states ----- */
+
+    &__title {
+        font-size: 1.35em;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0 0 var(--bd-stack-gap);
+    }
+
+    &__loading {
+        color: var(--bd-color-muted);
+        padding: var(--bd-row-gap) 0;
+    }
+
+    &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        text-align: center;
+        color: var(--bd-color-muted);
+        padding: calc(var(--bd-stack-gap) * 1.5) 1rem;
+    }
+
+    &__empty-icon { font-size: 2.2em; color: var(--bd-color-border); }
+    &__empty-text { margin: 0; }
+
+    /* ----- icon primitive ----- */
+
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1em;
+        height: 1em;
+        flex-shrink: 0;
+
+        svg { width: 100%; height: 100%; display: block; }
+    }
+
+    /* ----- avatar ----- */
+
+    &__avatar {
+        flex-shrink: 0;
+        width: var(--bd-avatar-size);
+        height: var(--bd-avatar-size);
+        border-radius: var(--bd-avatar-radius);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(var(--bd-avatar-size) * 0.36);
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        user-select: none;
+        color: var(--bd-avatar-text);
+        background: hsl(var(--bd-avatar-hue, 222) var(--bd-avatar-sat) var(--bd-avatar-light));
+    }
+
+    /* ----- comment list ----- */
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--bd-stack-gap);
+        margin-top: var(--bd-stack-gap);
+    }
+
+    &__comment { scroll-margin-top: 1rem; }
+
+    &__row {
+        display: flex;
+        gap: var(--bd-row-gap);
+        align-items: flex-start;
+    }
+
+    &__main { flex: 1; min-width: 0; }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.5rem;
+        line-height: 1.3;
+    }
+
+    &__author {
+        font-weight: 650;
+        color: var(--bd-color-text);
+    }
+
+    &__time {
+        color: var(--bd-color-muted);
+        font-size: var(--bd-font-size-sm);
+
+        &::before {
+            content: "·";
+            margin-right: 0.5rem;
+            color: var(--bd-color-muted);
+        }
+    }
+
+    &__badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-radius: var(--bd-radius-sm);
+        padding: 0.1em 0.45em;
+        background: var(--bd-color-accent-soft);
+        color: var(--bd-color-accent);
+
+        &--pending {
+            background: var(--bd-color-pending-bg);
+            color: var(--bd-color-pending-text);
+        }
+    }
+
+    &__body {
+        margin-top: 0.25rem;
+        color: var(--bd-color-text);
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    /* ----- toolbar (reactions + actions) ----- */
+
+    &__toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.6rem;
+        margin-top: 0.6rem;
+    }
+
+    &__action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font: inherit;
+        font-size: var(--bd-font-size-sm);
+        font-weight: 600;
+        color: var(--bd-color-muted);
+        background: transparent;
+        border: 0;
+        border-radius: var(--bd-radius-pill);
+        padding: 0.3rem 0.5rem;
+        cursor: pointer;
+        transition: color var(--bd-transition), background var(--bd-transition);
+
+        &:hover { color: var(--bd-color-accent); background: var(--bd-color-accent-soft); }
+        &--danger:hover { color: var(--bd-color-danger); background: color-mix(in srgb, var(--bd-color-danger) 12%, transparent); }
+        &-icon { font-size: 1.05em; }
+    }
+
+    /* ----- reactions ----- */
+
+    &__reactions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    &__reaction {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font: inherit;
+        font-size: var(--bd-font-size-sm);
+        line-height: 1;
+        background: var(--bd-color-surface);
+        border: 1px solid var(--bd-color-border);
+        border-radius: var(--bd-radius-pill);
+        padding: 0.25rem 0.55rem;
+        cursor: pointer;
+        transition: border-color var(--bd-transition), background var(--bd-transition), transform var(--bd-transition);
+
+        &:hover { transform: translateY(-1px); }
+        &-emoji { font-size: 1.05em; }
+        &-count { font-weight: 600; color: var(--bd-color-muted); }
+
+        &--active {
+            border-color: var(--bd-color-accent);
+            background: var(--bd-color-accent-soft);
+
+            .bolt-discussion__reaction-count { color: var(--bd-color-accent); }
+        }
+    }
+
+    &__react-add { position: relative; display: inline-flex; }
+
+    &__react-add-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.85rem;
+        height: 1.85rem;
+        font-size: 1rem;
+        color: var(--bd-color-muted);
+        background: var(--bd-color-surface);
+        border: 1px solid var(--bd-color-border);
+        border-radius: var(--bd-radius-pill);
+        cursor: pointer;
+        transition: color var(--bd-transition), border-color var(--bd-transition), background var(--bd-transition);
+
+        &:hover { color: var(--bd-color-accent); border-color: var(--bd-color-accent); background: var(--bd-color-accent-soft); }
+    }
+
+    &__picker {
+        position: absolute;
+        bottom: calc(100% + 0.5rem);
+        left: 0;
+        z-index: 20;
+        display: flex;
+        gap: 0.15rem;
+        padding: 0.3rem;
+        background: var(--bd-color-surface);
+        border: 1px solid var(--bd-color-border);
+        border-radius: var(--bd-radius);
+        box-shadow: var(--bd-shadow);
+
+        &[hidden] { display: none; }
+    }
+
+    &__picker-option {
+        font-size: 1.2rem;
+        line-height: 1;
+        background: transparent;
+        border: 0;
+        border-radius: var(--bd-radius-sm);
+        padding: 0.3rem;
+        cursor: pointer;
+        transition: background var(--bd-transition), transform var(--bd-transition);
+
+        &:hover { background: var(--bd-color-surface-alt); transform: scale(1.15); }
+    }
+
+    /* ----- replies (collapsible thread) ----- */
+
+    &__replies-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0.6rem 0 0 calc(var(--bd-avatar-size) + var(--bd-row-gap));
+        font: inherit;
+        font-size: var(--bd-font-size-sm);
+        font-weight: 600;
+        color: var(--bd-color-accent);
+        background: transparent;
+        border: 0;
+        padding: 0.2rem 0;
+        cursor: pointer;
+
+        &:hover { text-decoration: underline; }
+    }
+
+    &__replies-chevron {
+        font-size: 0.85em;
+        transition: transform var(--bd-transition);
+    }
+
+    &__replies-toggle--open &__replies-chevron,
+    &__replies-toggle--open .bolt-discussion__replies-chevron { transform: rotate(90deg); }
+
+    &__replies {
+        display: flex;
+        flex-direction: column;
+        gap: var(--bd-row-gap);
+        margin: 0.6rem 0 0 calc(var(--bd-avatar-size) / 2);
+        padding-left: calc(var(--bd-avatar-size) / 2 + var(--bd-row-gap));
+        border-left: var(--bd-thread-width) solid var(--bd-thread-line);
+
+        &[hidden] { display: none; }
+
+        .bolt-discussion__comment--reply { --bd-avatar-size: 30px; }
+    }
+
+    /* ----- forms (composer + reply) ----- */
+
+    &__form {
+        margin-top: var(--bd-row-gap);
+        background: var(--bd-color-surface);
+        border: 1px solid var(--bd-color-border);
+        border-radius: var(--bd-radius-lg);
+        padding: 0.9rem 1rem;
+        transition: border-color var(--bd-transition), box-shadow var(--bd-transition);
+
+        &:focus-within { border-color: var(--bd-color-accent); box-shadow: var(--bd-ring); }
+
+        &--reply {
+            margin-top: 0.75rem;
+            background: var(--bd-color-surface-alt);
+            border-radius: var(--bd-radius);
+            padding: 0.7rem 0.8rem;
+        }
+    }
+
+    &__form-fields { min-width: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+
+    &__input,
+    &__textarea {
+        font: inherit;
+        width: 100%;
+        color: var(--bd-color-text);
+        background: transparent;
+        border: 0;
+        padding: 0.3rem 0;
+
+        &::placeholder { color: var(--bd-color-muted); }
+
+        /* The card (.bolt-discussion__form:focus-within) is the focus indicator;
+           the fields themselves never draw their own outline. */
+        &:focus,
+        &:focus-visible { outline: none; box-shadow: none; }
+    }
+
+    &__input {
+        font-weight: 600;
+        border-bottom: 1px solid var(--bd-color-border);
+        padding-bottom: 0.45rem;
+    }
+
+    &__textarea {
+        resize: none;
+        min-height: 2.6rem;
+        overflow: hidden;
+    }
+
+    &__form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 0.6rem;
+    }
+
+    &__notice {
+        margin-right: auto;
+        color: var(--bd-color-muted);
+        font-size: var(--bd-font-size-sm);
+    }
+
+    &__error {
+        color: var(--bd-color-danger);
+        font-size: var(--bd-font-size-sm);
+        margin-top: 0.4rem;
+    }
+
+    /* Honeypot: visually and semantically hidden, reachable by bots. */
+    &__honeypot {
+        position: absolute !important;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* ----- buttons ----- */
+
+    &__btn {
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: var(--bd-radius);
+        padding: 0.5rem 1.1rem;
+        transition: filter var(--bd-transition), background var(--bd-transition);
+
+        &--primary {
+            background: var(--bd-color-accent);
+            color: var(--bd-color-accent-contrast);
+
+            &:hover { filter: brightness(0.94); }
+            &:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+        }
+    }
+
+    &__more {
+        display: block;
+        width: 100%;
+        margin-top: var(--bd-stack-gap);
+        font: inherit;
+        font-weight: 600;
+        color: var(--bd-color-text);
+        background: var(--bd-color-surface);
+        border: 1px solid var(--bd-color-border);
+        border-radius: var(--bd-radius);
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        transition: background var(--bd-transition), border-color var(--bd-transition);
+
+        &:hover { background: var(--bd-color-surface-alt); border-color: var(--bd-color-muted); }
+        &:disabled { opacity: 0.55; cursor: not-allowed; }
+    }
+
+    /* ----- a11y: focus + reduced motion ----- */
+
+    /* A visible focus ring on every control EXCEPT the composer text fields —
+       those live inside the form card, whose :focus-within border + ring is the
+       single focus indicator. (Excluding them here avoids a double outline.) */
+    :focus-visible:not(.bolt-discussion__input):not(.bolt-discussion__textarea) {
+        outline: 2px solid var(--bd-color-accent);
+        outline-offset: 2px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bolt-discussion * {
+        transition: none !important;
+    }
+}

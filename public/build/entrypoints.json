@@ -1,0 +1,12 @@
+{
+  "entrypoints": {
+    "discussion": {
+      "css": [
+        "/discussion/asset/discussion.css"
+      ],
+      "js": [
+        "/discussion/asset/discussion.js"
+      ]
+    }
+  }
+}

@@ -1,0 +1,71 @@
+# Bolt Discussion — English catalog (domain: bolt_discussion).
+# The English source string is used as the translation key everywhere in the
+# extension, so this file is mostly self-mapping and documents the full key set.
+
+# Frontend widget (rendered by discussion.js)
+'Loading discussion…': 'Loading discussion…'
+'Comments require JavaScript to be enabled.': 'Comments require JavaScript to be enabled.'
+'Be the first to comment.': 'Be the first to comment.'
+'Load more comments': 'Load more comments'
+'Your name': 'Your name'
+'Write a reply…': 'Write a reply…'
+'Join the discussion…': 'Join the discussion…'
+'Post comment': 'Post comment'
+'Reply': 'Reply'
+'Delete': 'Delete'
+'staff': 'staff'
+'awaiting review': 'awaiting review'
+'Thanks! Your comment is awaiting moderation.': 'Thanks! Your comment is awaiting moderation.'
+'Something went wrong.': 'Something went wrong.'
+'Network error. Please try again.': 'Network error. Please try again.'
+'Delete this comment?': 'Delete this comment?'
+
+# Validation / API errors
+'Invalid discussion reference.': 'Invalid discussion reference.'
+'Comment cannot be empty.': 'Comment cannot be empty.'
+'Comment is too long (max %max% characters).': 'Comment is too long (max %max% characters).'
+'Please provide your name.': 'Please provide your name.'
+'Replies are disabled.': 'Replies are disabled.'
+'The comment you are replying to no longer exists.': 'The comment you are replying to no longer exists.'
+'Replies cannot be nested deeper than one level.': 'Replies cannot be nested deeper than one level.'
+'You cannot reply to this comment.': 'You cannot reply to this comment.'
+'Reactions are disabled.': 'Reactions are disabled.'
+'Unknown reaction.': 'Unknown reaction.'
+'You are posting too quickly. Please wait a moment and try again.': 'You are posting too quickly. Please wait a moment and try again.'
+'Invalid security token.': 'Invalid security token.'
+'Invalid security token. Please reload the page.': 'Invalid security token. Please reload the page.'
+'Not authorised.': 'Not authorised.'
+'Comment not available.': 'Comment not available.'
+'Invalid polling cursor.': 'Invalid polling cursor.'
+'Invalid comment polling request.': 'Invalid comment polling request.'
+
+# Backend admin
+'Discussion': 'Discussion'
+'Discussions': 'Discussions'
+'No comments have been posted yet.': 'No comments have been posted yet.'
+'Reference': 'Reference'
+'Comments': 'Comments'
+'Pending': 'Pending'
+'Last activity': 'Last activity'
+'View': 'View'
+'All discussions': 'All discussions'
+'No comments.': 'No comments.'
+'user': 'user'
+'reply': 'reply'
+'Approve': 'Approve'
+'Mark spam': 'Mark spam'
+'Comment #%id% deleted.': 'Comment #%id% deleted.'
+'Comment #%id% approved.': 'Comment #%id% approved.'
+'Comment #%id% marked as spam.': 'Comment #%id% marked as spam.'
+
+# Comment statuses
+'Published': 'Published'
+'Spam': 'Spam'
+'Deleted': 'Deleted'
+
+# Collapsible threads — reply count (CLDR plural categories) + collapse toggle
+reply_count:
+  one: '%count% reply'
+  other: '%count% replies'
+'Hide replies': 'Hide replies'
+'Add reaction': 'Add reaction'

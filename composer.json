@@ -1,0 +1,54 @@
+{
+    "name": "tomvondracek/bolt-discussion",
+    "description": "📦 Pluggable, themeable discussion / comments module for Bolt CMS 6 (replies, reactions, async submit, REST polling).",
+    "type": "bolt-extension",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Tomáš Vondráček",
+            "email": "tomasvondrac@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "twig/twig": "^3.3"
+    },
+    "require-dev": {
+        "bolt/core": "^6.0",
+        "phpstan/extension-installer": "1.4.3",
+        "phpstan/phpstan": "2.1.31",
+        "phpstan/phpstan-deprecation-rules": "2.0.3",
+        "phpunit/phpunit": "^10.5",
+        "rector/rector": "2.2.7",
+        "symplify/easy-coding-standard": "^13"
+    },
+    "autoload": {
+        "psr-4": {
+            "BoltDiscussion\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "BoltDiscussion\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        },
+        "entrypoint": "BoltDiscussion\\Extension"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": false,
+            "drupol/composer-packages": false,
+            "phpstan/extension-installer": true,
+            "symfony/runtime": true
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}

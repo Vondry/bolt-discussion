@@ -1,0 +1,192 @@
+{% macro icon(name, extraClass = '') %}
+    {% set paths = {
+        smile: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5s1.3 2 3.5 2 3.5-2 3.5-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/>',
+        reply: '<path d="M9 17l-5-5 5-5"/><path d="M4 12h11a5 5 0 0 1 5 5v1"/>',
+        chevron: '<path d="M9 6l6 6-6 6"/>',
+        bubble: '<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/>'
+    } %}
+    <span class="bolt-discussion__icon {{ extraClass }}" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">{{ paths[name]|raw }}</svg>
+    </span>
+{% endmacro %}
+
+{% macro comment(comment, replies, replyLabel, options) %}
+    {% import _self as ui %}
+    {% set isReply = comment.parentId is not null %}
+    <article class="bolt-discussion__comment{{ isReply ? ' bolt-discussion__comment--reply' : '' }}"
+             data-id="{{ comment.id }}">
+        <div class="bolt-discussion__row">
+            <span class="bolt-discussion__avatar"
+                  style="--bd-avatar-hue: {{ comment.avatarHue }}"
+                  aria-hidden="true">{{ comment.initials }}</span>
+            <div class="bolt-discussion__main">
+                <div class="bolt-discussion__meta">
+                    <span class="bolt-discussion__author">{{ comment.author }}</span>
+                    {% if comment.authenticated %}
+                        <span class="bolt-discussion__badge bolt-discussion__badge--staff">{{ options.labels.staff }}</span>
+                    {% endif %}
+                    {% if comment.status == 'pending' %}
+                        <span class="bolt-discussion__badge bolt-discussion__badge--pending">{{ options.labels.pending }}</span>
+                    {% endif %}
+                    <time class="bolt-discussion__time"
+                          datetime="{{ comment.createdAt }}"
+                          title="{{ comment.createdTitle }}">{{ comment.createdLabel }}</time>
+                </div>
+
+                <div class="bolt-discussion__body">{{ comment.body|nl2br }}</div>
+
+                <div class="bolt-discussion__toolbar">
+                    {% if options.reactionsEnabled %}
+                        <div class="bolt-discussion__reactions">
+                            {% for reaction in comment.reactions %}
+                                {% if reaction.count > 0 or reaction.mine %}
+                                    <button class="bolt-discussion__reaction{{ reaction.mine ? ' bolt-discussion__reaction--active' : '' }}"
+                                            type="button"
+                                            aria-pressed="{{ reaction.mine ? 'true' : 'false' }}"
+                                            data-bd-comment-id="{{ comment.id }}"
+                                            data-bd-reaction="{{ reaction.emoji }}">
+                                        <span class="bolt-discussion__reaction-emoji">{{ reaction.emoji }}</span>
+                                        <span class="bolt-discussion__reaction-count">{{ reaction.count }}</span>
+                                    </button>
+                                {% endif %}
+                            {% endfor %}
+
+                            <div class="bolt-discussion__react-add">
+                                <button class="bolt-discussion__react-add-btn"
+                                        type="button"
+                                        aria-label="{{ options.labels.addReaction }}"
+                                        data-bd-picker>
+                                    {{ ui.icon('smile') }}
+                                </button>
+                                <div class="bolt-discussion__picker" hidden>
+                                    {% for emoji in options.reactions %}
+                                        <button class="bolt-discussion__picker-option"
+                                                type="button"
+                                                data-bd-comment-id="{{ comment.id }}"
+                                                data-bd-reaction="{{ emoji }}">{{ emoji }}</button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if options.repliesEnabled and not isReply %}
+                        <button class="bolt-discussion__action"
+                                type="button"
+                                data-bd-reply="{{ comment.id }}">
+                            {{ ui.icon('reply', 'bolt-discussion__action-icon') }}
+                            {{ options.labels.reply }}
+                        </button>
+                    {% endif %}
+
+                    {% if options.canModerate and comment.status != 'deleted' %}
+                        <button class="bolt-discussion__action bolt-discussion__action--danger"
+                                type="button"
+                                data-bd-delete="{{ comment.id }}">{{ options.labels.delete }}</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if not isReply and replies is not empty %}
+            <button class="bolt-discussion__replies-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    data-bd-replies-toggle="{{ comment.id }}"
+                    data-bd-reply-count="{{ replies|length }}">
+                {{ ui.icon('chevron', 'bolt-discussion__replies-chevron') }}
+                <span class="bolt-discussion__replies-label">{{ replyLabel }}</span>
+            </button>
+        {% endif %}
+
+        <div class="bolt-discussion__replies"{{ replies is not empty ? ' hidden' : '' }}>
+            {% for reply in replies %}
+                {{ ui.comment(reply, [], '', options) }}
+            {% endfor %}
+        </div>
+    </article>
+{% endmacro %}
+
+{% import _self as ui %}
+{% set uiOptions = {
+    reactionsEnabled: reactionsEnabled,
+    reactions: reactions,
+    repliesEnabled: repliesEnabled,
+    canModerate: canModerate,
+    labels: labels
+} %}
+
+{#
+    The first page is rendered by PHP to avoid an empty loading state and CLS.
+    JavaScript hydrates this markup, then handles posting, older pages and polls.
+#}
+<div class="bolt-discussion"
+     data-reference="{{ reference }}"
+     data-list-url="{{ listUrl }}"
+     data-reaction-url-template="{{ reactionUrlTemplate }}"
+     data-delete-url-template="{{ deleteUrlTemplate }}"
+     data-csrf-token="{{ csrfToken }}"
+     data-csrf-token-url="{{ csrfTokenUrl }}"
+     data-poll-interval="{{ pollInterval }}"
+     data-reactions-enabled="{{ reactionsEnabled ? '1' : '0' }}"
+     data-reactions="{{ reactions|json_encode }}"
+     data-replies-enabled="{{ repliesEnabled ? '1' : '0' }}"
+     data-require-name="{{ requireName ? '1' : '0' }}"
+     data-max-length="{{ maxLength }}"
+     data-can-moderate="{{ canModerate ? '1' : '0' }}"
+     data-locale="{{ locale }}"
+     data-i18n="{{ labels|json_encode }}">
+    {% if title %}<h2 class="bolt-discussion__title">{{ title }}</h2>{% endif %}
+
+    <form class="bolt-discussion__form" data-bd-composer>
+        <div class="bolt-discussion__form-fields">
+            {% if not canModerate %}
+                <input class="bolt-discussion__input"
+                       type="text"
+                       placeholder="{{ labels.name }}"
+                       autocomplete="name"
+                       data-bd-name
+                       {{ requireName ? 'required' : '' }}>
+            {% endif %}
+            <textarea class="bolt-discussion__textarea"
+                      placeholder="{{ labels.commentPlaceholder }}"
+                      maxlength="{{ maxLength }}"
+                      rows="3"
+                      required
+                      data-bd-body></textarea>
+        </div>
+        <input class="bolt-discussion__honeypot"
+               type="text"
+               name="website"
+               tabindex="-1"
+               autocomplete="off"
+               aria-hidden="true"
+               data-bd-honeypot>
+        <div class="bolt-discussion__error" hidden data-bd-error></div>
+        <div class="bolt-discussion__form-footer">
+            <button class="bolt-discussion__btn bolt-discussion__btn--primary"
+                    type="submit"
+                    data-bd-submit>{{ labels.post }}</button>
+        </div>
+    </form>
+
+    <div class="bolt-discussion__list" data-bd-list>
+        {% for thread in initialThreads %}
+            {{ ui.comment(thread.comment, thread.replies, thread.replyLabel, uiOptions) }}
+        {% endfor %}
+    </div>
+
+    <div class="bolt-discussion__empty" data-bd-empty{{ initialThreads is not empty ? ' hidden' : '' }}>
+        {{ ui.icon('bubble', 'bolt-discussion__empty-icon') }}
+        <p class="bolt-discussion__empty-text">{{ labels.empty }}</p>
+    </div>
+
+    <button class="bolt-discussion__more"
+            type="button"
+            data-bd-more
+            {{ initialPage.hasMore ? '' : 'hidden' }}>{{ labels.loadMore }}</button>
+
+    <script type="application/json" data-bd-initial>{{ initialJson|raw }}</script>
+    <noscript>{{ 'Comments require JavaScript to be enabled.'|trans({}, 'bolt_discussion') }}</noscript>
+</div>

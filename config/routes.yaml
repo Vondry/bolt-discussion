@@ -1,0 +1,15 @@
+# Frontend JSON API + public asset serving (no prefix; outside the /bolt firewall).
+bolt_discussion_api:
+  resource: '../../vendor/tomvondracek/bolt-discussion/src/Controller/Api/'
+  type: attribute
+
+bolt_discussion_asset:
+  resource: '../../vendor/tomvondracek/bolt-discussion/src/Controller/AssetController.php'
+  type: attribute
+
+# Backend (admin) screens, prefixed with the configured backend URL so they sit
+# inside Bolt's authenticated /bolt firewall.
+bolt_discussion_backend:
+  resource: '../../vendor/tomvondracek/bolt-discussion/src/Controller/Backend/'
+  type: attribute
+  prefix: '%bolt.backend_url%'
