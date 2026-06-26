@@ -71,51 +71,55 @@ class DiscussionAdminController extends AbstractController implements BackendZon
      */
     private function buildThreads(array $comments, array $replyCountForms): array
     {
-        $threads = [];
-        $rootIndex = [];
         $locale = $this->translator instanceof LocaleAwareInterface ? $this->translator->getLocale() : 'en';
 
+        /** @var array<int, DiscussionComment> $roots root comments keyed by id, in encounter order */
+        $roots = [];
         foreach ($comments as $comment) {
-            if ($comment->isReply()) {
-                continue;
+            if (! $comment->isReply()) {
+                $roots[(int) $comment->getId()] = $comment;
             }
-
-            $rootIndex[(int) $comment->getId()] = count($threads);
-            $threads[] = [
-                'comment' => $comment,
-                'replies' => [],
-                'replyLabel' => '',
-                'orphan' => false,
-            ];
         }
 
+        /** @var array<int, list<DiscussionComment>> $repliesByRoot replies grouped by root id */
+        $repliesByRoot = [];
+        /** @var list<DiscussionComment> $orphans replies whose parent is no longer a visible root */
+        $orphans = [];
         foreach ($comments as $comment) {
             if (! $comment->isReply()) {
                 continue;
             }
 
             $parentId = (int) $comment->getParent()?->getId();
-            if (isset($rootIndex[$parentId])) {
-                $threads[$rootIndex[$parentId]]['replies'][] = $comment;
-                continue;
+            if (isset($roots[$parentId])) {
+                $repliesByRoot[$parentId][] = $comment;
+            } else {
+                $orphans[] = $comment;
             }
+        }
 
+        $sortByCreated = static fn (DiscussionComment $a, DiscussionComment $b): int => $a->getCreatedAt() <=> $b->getCreatedAt();
+
+        $threads = [];
+        foreach ($roots as $rootId => $root) {
+            $replies = $repliesByRoot[$rootId] ?? [];
+            usort($replies, $sortByCreated);
             $threads[] = [
-                'comment' => $comment,
-                'replies' => [],
-                'replyLabel' => '',
-                'orphan' => true,
+                'comment' => $root,
+                'replies' => $replies,
+                'replyLabel' => $this->replyCountLabel(count($replies), $locale, $replyCountForms),
+                'orphan' => false,
             ];
         }
 
-        foreach ($threads as &$thread) {
-            usort(
-                $thread['replies'],
-                static fn (DiscussionComment $a, DiscussionComment $b): int => $a->getCreatedAt() <=> $b->getCreatedAt()
-            );
-            $thread['replyLabel'] = $this->replyCountLabel(count($thread['replies']), $locale, $replyCountForms);
+        foreach ($orphans as $orphan) {
+            $threads[] = [
+                'comment' => $orphan,
+                'replies' => [],
+                'replyLabel' => $this->replyCountLabel(0, $locale, $replyCountForms),
+                'orphan' => true,
+            ];
         }
-        unset($thread);
 
         return $threads;
     }
