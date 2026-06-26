@@ -12,11 +12,13 @@ use BoltDiscussion\Repository\DiscussionReactionRepository;
 use BoltDiscussion\Service\DiscussionManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class DiscussionAdminControllerTest extends TestCase
@@ -40,7 +42,11 @@ class DiscussionAdminControllerTest extends TestCase
         $this->requestStack = new RequestStack();
 
         $this->translator->method('trans')->willReturnCallback(
-            static fn (string $key, array $params = []): string => strtr($key, $params)
+            static fn (string $key, array $params = []): string => match ($key) {
+                'reply_count.one' => '%count% reply',
+                'reply_count.other' => '%count% replies',
+                default => strtr($key, $params),
+            }
         );
     }
 
@@ -176,6 +182,100 @@ class DiscussionAdminControllerTest extends TestCase
         self::assertSame(['Comment #10 deleted.'], $this->session->getFlashBag()->peek('success'));
     }
 
+    public function testThreadViewReceivesGroupedThreadsWithReactions(): void
+    {
+        $root = $this->comment(1, 'Root', '2026-06-23 10:00:00');
+        $replyNewer = $this->comment(3, 'Reply newer', '2026-06-23 10:20:00', $root);
+        $replyOlder = $this->comment(2, 'Reply older', '2026-06-23 10:10:00', $root);
+        $deletedParent = $this->comment(99, 'Deleted parent', '2026-06-23 09:00:00');
+        $orphanReply = $this->comment(4, 'Orphan reply', '2026-06-23 10:30:00', $deletedParent);
+
+        $comments = [$orphanReply, $replyNewer, $root, $replyOlder];
+        $reactionSummary = [
+            1 => ['👍' => ['count' => 2, 'mine' => false]],
+            3 => ['❤️' => ['count' => 1, 'mine' => false]],
+        ];
+        $this->comments->expects(self::once())
+            ->method('findForAdmin')
+            ->with('demo')
+            ->willReturn($comments);
+        $this->reactions->expects(self::once())
+            ->method('summaryFor')
+            ->with([4, 3, 1, 2], '')
+            ->willReturn($reactionSummary);
+
+        $translator = new class implements TranslatorInterface, LocaleAwareInterface {
+            public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                return match ($id) {
+                    'reply_count.one' => '%count% odpověď',
+                    'reply_count.few' => '%count% odpovědi',
+                    'reply_count.other' => '%count% odpovědí',
+                    default => strtr((string) $id, $parameters),
+                };
+            }
+
+            public function getLocale(): string
+            {
+                return 'cs';
+            }
+
+            public function setLocale(string $locale): void
+            {
+            }
+        };
+
+        $controller = new class(
+            $this->manager,
+            $this->comments,
+            $this->reactions,
+            $translator,
+        ) extends DiscussionAdminController {
+            /** @var array<string, mixed> */
+            public array $renderedParameters = [];
+            public string $renderedView = '';
+
+            public function __construct(
+                DiscussionManager $manager,
+                DiscussionCommentRepository $comments,
+                DiscussionReactionRepository $reactions,
+                TranslatorInterface $translator,
+            ) {
+                parent::__construct($manager, $comments, $reactions, $translator);
+            }
+
+            protected function render(string $view, array $parameters = [], ?Response $response = null): Response
+            {
+                $this->renderedView = $view;
+                $this->renderedParameters = $parameters;
+
+                return new Response();
+            }
+        };
+
+        $controller->thread('demo');
+
+        self::assertSame('@bolt-discussion/backend/thread.html.twig', $controller->renderedView);
+        self::assertSame('demo', $controller->renderedParameters['reference']);
+        self::assertSame($comments, $controller->renderedParameters['comments']);
+        self::assertSame($reactionSummary, $controller->renderedParameters['reactions']);
+        self::assertSame([
+            'one' => '%count% odpověď',
+            'few' => '%count% odpovědi',
+            'other' => '%count% odpovědí',
+        ], $controller->renderedParameters['replyCountForms']);
+
+        $threads = $controller->renderedParameters['threads'];
+        self::assertCount(2, $threads);
+        self::assertSame($root, $threads[0]['comment']);
+        self::assertFalse($threads[0]['orphan']);
+        self::assertSame([$replyOlder, $replyNewer], $threads[0]['replies']);
+        self::assertSame('2 odpovědi', $threads[0]['replyLabel']);
+        self::assertSame($orphanReply, $threads[1]['comment']);
+        self::assertTrue($threads[1]['orphan']);
+        self::assertSame([], $threads[1]['replies']);
+    }
+
     private function controller(bool $csrfValid): DiscussionAdminController
     {
         return new class(
@@ -211,5 +311,22 @@ class DiscussionAdminControllerTest extends TestCase
     {
         $property = new \ReflectionProperty(DiscussionComment::class, 'id');
         $property->setValue($comment, $id);
+    }
+
+    private function comment(int $id, string $body, string $createdAt, ?DiscussionComment $parent = null): DiscussionComment
+    {
+        $comment = (new DiscussionComment())
+            ->setReference('demo')
+            ->setAuthorName('Admin user')
+            ->setBody($body)
+            ->setStatus(CommentStatus::Published)
+            ->setParent($parent);
+
+        $this->setCommentId($comment, $id);
+
+        $property = new \ReflectionProperty(DiscussionComment::class, 'createdAt');
+        $property->setValue($comment, new \DateTimeImmutable($createdAt));
+
+        return $comment;
     }
 }

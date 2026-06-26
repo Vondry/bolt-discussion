@@ -10,6 +10,7 @@ use BoltDiscussion\Enum\CommentStatus;
 use BoltDiscussion\Repository\DiscussionCommentRepository;
 use BoltDiscussion\Repository\DiscussionReactionRepository;
 use BoltDiscussion\Service\DiscussionManager;
+use MessageFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[IsGranted('ROLE_EDITOR')]
@@ -48,12 +50,110 @@ class DiscussionAdminController extends AbstractController implements BackendZon
         $comments = $this->comments->findForAdmin($reference);
         $ids = array_map(static fn (DiscussionComment $c): int => (int) $c->getId(), $comments);
         $reactions = $this->reactions->summaryFor($ids, '');
+        $replyCountForms = $this->replyCountForms();
 
         return $this->render('@bolt-discussion/backend/thread.html.twig', [
             'reference' => $reference,
             'comments' => $comments,
+            'threads' => $this->buildThreads($comments, $replyCountForms),
             'reactions' => $reactions,
+            'replyCountForms' => $replyCountForms,
         ]);
+    }
+
+    /**
+     * @param DiscussionComment[] $comments newest-first, as returned by the admin repository
+     * @param array<string, string> $replyCountForms
+     * @return list<array{comment: DiscussionComment, replies: list<DiscussionComment>, replyLabel: string, orphan: bool}>
+     */
+    private function buildThreads(array $comments, array $replyCountForms): array
+    {
+        $threads = [];
+        $rootIndex = [];
+        $locale = $this->translator instanceof LocaleAwareInterface ? $this->translator->getLocale() : 'en';
+
+        foreach ($comments as $comment) {
+            if ($comment->isReply()) {
+                continue;
+            }
+
+            $rootIndex[(int) $comment->getId()] = count($threads);
+            $threads[] = [
+                'comment' => $comment,
+                'replies' => [],
+                'replyLabel' => '',
+                'orphan' => false,
+            ];
+        }
+
+        foreach ($comments as $comment) {
+            if (! $comment->isReply()) {
+                continue;
+            }
+
+            $parentId = (int) $comment->getParent()?->getId();
+            if (isset($rootIndex[$parentId])) {
+                $threads[$rootIndex[$parentId]]['replies'][] = $comment;
+                continue;
+            }
+
+            $threads[] = [
+                'comment' => $comment,
+                'replies' => [],
+                'replyLabel' => '',
+                'orphan' => true,
+            ];
+        }
+
+        foreach ($threads as &$thread) {
+            usort(
+                $thread['replies'],
+                static fn (DiscussionComment $a, DiscussionComment $b): int => $a->getCreatedAt() <=> $b->getCreatedAt()
+            );
+            $thread['replyLabel'] = $this->replyCountLabel(count($thread['replies']), $locale, $replyCountForms);
+        }
+        unset($thread);
+
+        return $threads;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function replyCountForms(): array
+    {
+        $forms = [];
+        foreach (['one', 'few', 'many', 'other'] as $category) {
+            $key = 'reply_count.' . $category;
+            $translated = $this->translator->trans($key, [], self::DOMAIN);
+            if ($translated !== $key) {
+                $forms[$category] = $translated;
+            }
+        }
+
+        return $forms;
+    }
+
+    /**
+     * @param array<string, string> $forms
+     */
+    private function replyCountLabel(int $count, string $locale, array $forms): string
+    {
+        $category = $count === 1 ? 'one' : 'other';
+        if (class_exists(MessageFormatter::class)) {
+            $selected = MessageFormatter::formatMessage(
+                $locale,
+                '{count, plural, one {one} few {few} many {many} other {other}}',
+                ['count' => $count]
+            );
+            if (is_string($selected)) {
+                $category = $selected;
+            }
+        }
+
+        $template = $forms[$category] ?? $forms['other'] ?? '%count% replies';
+
+        return str_replace('%count%', (string) $count, $template);
     }
 
     #[Route('/comment/{id}/{action}', name: 'bolt_discussion_admin_action', methods: ['POST'], requirements: ['id' => '\d+', 'action' => 'delete|restore|spam'])]

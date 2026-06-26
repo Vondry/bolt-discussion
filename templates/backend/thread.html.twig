@@ -2,67 +2,112 @@
 {% import '@bolt/_macro/_macro.html.twig' as macro %}
 {% set d_domain = 'bolt_discussion' %}
 
+{% macro reactions(comment, reactions) %}
+    {% set summary = reactions[comment.id] ?? {} %}
+    {% if summary is not empty %}
+        <div class="d-flex flex-wrap justify-content-end" style="gap: .25rem;">
+            {% for emoji, data in summary %}
+                <span class="badge badge-light border px-2 py-1" title="{{ 'Add reaction'|trans({}, 'bolt_discussion') }}">
+                    <span aria-hidden="true">{{ emoji }}</span> {{ data.count }}
+                </span>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro actions(comment, reference) %}
+    {% set d_domain = 'bolt_discussion' %}
+    {% if comment.status.value != 'deleted' %}
+        <form method="post" class="d-inline"
+              action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'delete' }) }}"
+              onsubmit="return confirm('{{ 'Delete this comment?'|trans({}, d_domain)|e('js') }}');">
+            <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
+            <input type="hidden" name="reference" value="{{ reference }}">
+            <button class="btn btn-sm btn-outline-danger">{{ 'Delete'|trans({}, d_domain) }}</button>
+        </form>
+    {% endif %}
+    {% if comment.status.value == 'pending' %}
+        <form method="post" class="d-inline"
+              action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'restore' }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
+            <input type="hidden" name="reference" value="{{ reference }}">
+            <button class="btn btn-sm btn-outline-success">{{ 'Approve'|trans({}, d_domain) }}</button>
+        </form>
+    {% endif %}
+    {% if comment.status.value != 'spam' %}
+        <form method="post" class="d-inline"
+              action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'spam' }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
+            <input type="hidden" name="reference" value="{{ reference }}">
+            <button class="btn btn-sm btn-outline-secondary">{{ 'Mark spam'|trans({}, d_domain) }}</button>
+        </form>
+    {% endif %}
+{% endmacro %}
+
+{% macro comment_card(comment, reactions, reference, isReply, isOrphan) %}
+    {% import _self as admin %}
+    {% set d_domain = 'bolt_discussion' %}
+
+    <div class="card {{ isReply ? 'mb-2 border-left' : 'mb-3 shadow-sm border-0' }}"
+         style="{{ isReply ? 'border-left: 3px solid #6c757d !important;' : 'border-top: 4px solid #2f80ed;' }}">
+        <div class="card-body {{ isReply ? 'py-2' : 'py-3' }}">
+            <div class="d-flex justify-content-between align-items-start" style="gap: 1rem;">
+                <div class="min-w-0">
+                    <div class="d-flex flex-wrap align-items-center" style="gap: .35rem;">
+                        <strong class="{{ isReply ? '' : 'h5 mb-0' }}">{{ comment.authorName }}</strong>
+                        {% if comment.author %}<span class="badge badge-info">{{ 'user'|trans({}, d_domain) }}</span>{% endif %}
+                        {% if isReply %}<span class="badge badge-light">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
+                        {% if isOrphan %}<span class="badge badge-secondary">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
+                        <span class="badge badge-{{ comment.status.value == 'published' ? 'success' : (comment.status.value == 'pending' ? 'warning' : 'secondary') }}">
+                            {{ comment.status.label|trans({}, d_domain) }}
+                        </span>
+                    </div>
+                    <small class="text-muted">{{ comment.createdAt|date('Y-m-d H:i') }}</small>
+                </div>
+                {{ admin.reactions(comment, reactions) }}
+            </div>
+
+            <div class="mt-2 {{ isReply ? '' : 'lead' }}" style="{{ isReply ? '' : 'font-size: 1rem;' }}">{{ comment.body|nl2br }}</div>
+
+            <div class="mt-3 d-flex flex-wrap" style="gap: .35rem;">
+                {{ admin.actions(comment, reference) }}
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
 {% block title %}
     {{ macro.icon('comments') }} {{ 'Discussion'|trans({}, d_domain) }}: {{ reference }}
 {% endblock title %}
 
 {% block main %}
+    {% import _self as admin %}
+
     <p><a href="{{ path('bolt_discussion_admin') }}">&larr; {{ 'All discussions'|trans({}, d_domain) }}</a></p>
     <h1>{{ macro.icon('comments') }} <code>{{ reference }}</code></h1>
 
     {% if comments is empty %}
         <p>{{ 'No comments.'|trans({}, d_domain) }}</p>
     {% else %}
-        {% for comment in comments %}
-            <div class="card mb-2 {{ comment.isReply ? 'ml-4' : '' }}">
-                <div class="card-body py-2">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <strong>{{ comment.authorName }}</strong>
-                            {% if comment.author %}<span class="badge badge-info">{{ 'user'|trans({}, d_domain) }}</span>{% endif %}
-                            {% if comment.isReply %}<span class="badge badge-light">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
-                            <span class="badge badge-{{ comment.status.value == 'published' ? 'success' : (comment.status.value == 'pending' ? 'warning' : 'secondary') }}">
-                                {{ comment.status.label|trans({}, d_domain) }}
-                            </span>
-                            <small class="text-muted ml-2">{{ comment.createdAt|date('Y-m-d H:i') }}</small>
+        <div class="mb-3 text-muted">
+            {{ comments|length }} {{ 'Comments'|trans({}, d_domain) }}
+        </div>
+
+        {% for thread in threads %}
+            <section class="mb-4">
+                {{ admin.comment_card(thread.comment, reactions, reference, false, thread.orphan) }}
+
+                {% if thread.replies is not empty %}
+                    <div class="ml-4 pl-4 py-2" style="border-left: 3px solid #dfe4ea; background: linear-gradient(90deg, rgba(47,128,237,.06), rgba(47,128,237,0));">
+                        <div class="small text-muted mb-2 text-uppercase font-weight-bold">
+                            {{ thread.replyLabel }}
                         </div>
-                        <div>
-                            {% set summary = reactions[comment.id] ?? {} %}
-                            {% for emoji, data in summary %}
-                                <span class="mr-1">{{ emoji }} {{ data.count }}</span>
-                            {% endfor %}
-                        </div>
+                        {% for reply in thread.replies %}
+                            {{ admin.comment_card(reply, reactions, reference, true, false) }}
+                        {% endfor %}
                     </div>
-                    <div class="mt-1">{{ comment.body|nl2br }}</div>
-                    <div class="mt-2">
-                        {% if comment.status.value != 'deleted' %}
-                            <form method="post" class="d-inline"
-                                  action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'delete' }) }}"
-                                  onsubmit="return confirm('{{ 'Delete this comment?'|trans({}, d_domain)|e('js') }}');">
-                                <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
-                                <input type="hidden" name="reference" value="{{ reference }}">
-                                <button class="btn btn-sm btn-outline-danger">{{ 'Delete'|trans({}, d_domain) }}</button>
-                            </form>
-                        {% endif %}
-                        {% if comment.status.value == 'pending' %}
-                            <form method="post" class="d-inline"
-                                  action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'restore' }) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
-                                <input type="hidden" name="reference" value="{{ reference }}">
-                                <button class="btn btn-sm btn-outline-success">{{ 'Approve'|trans({}, d_domain) }}</button>
-                            </form>
-                        {% endif %}
-                        {% if comment.status.value != 'spam' %}
-                            <form method="post" class="d-inline"
-                                  action="{{ path('bolt_discussion_admin_action', { id: comment.id, action: 'spam' }) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('bolt_discussion_admin') }}">
-                                <input type="hidden" name="reference" value="{{ reference }}">
-                                <button class="btn btn-sm btn-outline-secondary">{{ 'Mark spam'|trans({}, d_domain) }}</button>
-                            </form>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+                {% endif %}
+            </section>
         {% endfor %}
     {% endif %}
 {% endblock main %}
