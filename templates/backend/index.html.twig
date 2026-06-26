@@ -2,6 +2,11 @@
 {% import '@bolt/_macro/_macro.html.twig' as macro %}
 {% set d_domain = 'bolt_discussion' %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    {% include '@bolt-discussion/backend/_badges.html.twig' %}
+{% endblock %}
+
 {% block title %}
     {{ macro.icon('comments') }} {{ 'Discussion'|trans({}, d_domain) }}
 {% endblock title %}
@@ -29,7 +34,7 @@
                         <td class="text-right">{{ d.total }}</td>
                         <td class="text-right">
                             {% if d.pending > 0 %}
-                                <span class="badge badge-warning">{{ d.pending }}</span>
+                                <span class="bd-badge bd-badge--warning">{{ d.pending }}</span>
                             {% else %}
                                 0
                             {% endif %}

@@ -2,12 +2,17 @@
 {% import '@bolt/_macro/_macro.html.twig' as macro %}
 {% set d_domain = 'bolt_discussion' %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    {% include '@bolt-discussion/backend/_badges.html.twig' %}
+{% endblock %}
+
 {% macro reactions(comment, reactions) %}
     {% set summary = reactions[comment.id] ?? {} %}
     {% if summary is not empty %}
         <div class="d-flex flex-wrap justify-content-end" style="gap: .25rem;">
             {% for emoji, data in summary %}
-                <span class="badge badge-light border px-2 py-1" title="{{ 'Add reaction'|trans({}, 'bolt_discussion') }}">
+                <span class="bd-badge bd-badge--light" title="{{ 'Add reaction'|trans({}, 'bolt_discussion') }}">
                     <span aria-hidden="true">{{ emoji }}</span> {{ data.count }}
                 </span>
             {% endfor %}
@@ -55,10 +60,10 @@
                 <div class="min-w-0">
                     <div class="d-flex flex-wrap align-items-center" style="gap: .35rem;">
                         <strong class="{{ isReply ? '' : 'h5 mb-0' }}">{{ comment.authorName }}</strong>
-                        {% if comment.author %}<span class="badge badge-info">{{ 'user'|trans({}, d_domain) }}</span>{% endif %}
-                        {% if isReply %}<span class="badge badge-light">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
-                        {% if isOrphan %}<span class="badge badge-secondary">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
-                        <span class="badge badge-{{ comment.status.value == 'published' ? 'success' : (comment.status.value == 'pending' ? 'warning' : 'secondary') }}">
+                        {% if comment.author %}<span class="bd-badge bd-badge--info">{{ 'user'|trans({}, d_domain) }}</span>{% endif %}
+                        {% if isReply %}<span class="bd-badge bd-badge--light">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
+                        {% if isOrphan %}<span class="bd-badge bd-badge--secondary">{{ 'reply'|trans({}, d_domain) }}</span>{% endif %}
+                        <span class="bd-badge bd-badge--{{ comment.status.value == 'published' ? 'success' : (comment.status.value == 'pending' ? 'warning' : 'secondary') }}">
                             {{ comment.status.label|trans({}, d_domain) }}
                         </span>
                     </div>

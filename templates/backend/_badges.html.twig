@@ -1,0 +1,23 @@
+{# Self-contained badge styling for the discussion admin screens.
+   Deliberately independent of Bootstrap's .badge classes, whose colour
+   utilities differ between major versions (BS5 dropped .badge-info etc.,
+   which left badges as white-on-white in the admin). #}
+<style>
+    .bd-badge {
+        display: inline-block;
+        padding: .25em .5em;
+        font-size: .75rem;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: .25rem;
+        vertical-align: baseline;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+    .bd-badge--info { background: #2f80ed; color: #fff; }
+    .bd-badge--success { background: #2e7d32; color: #fff; }
+    .bd-badge--warning { background: #f5a623; color: #1a1a1a; }
+    .bd-badge--secondary { background: #6c757d; color: #fff; }
+    .bd-badge--danger { background: #c62828; color: #fff; }
+    .bd-badge--light { background: #e9ecef; color: #1a1a1a; border-color: #ced4da; }
+</style>
