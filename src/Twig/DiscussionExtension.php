@@ -61,8 +61,9 @@ class DiscussionExtension extends AbstractExtension
      *
      * @param array<string, mixed> $options
      */
-    public function render(Environment $twig, string $reference, array $options = []): string
+    public function render(Environment $twig, string|Stringable $reference, array $options = []): string
     {
+        $reference = (string) $reference;
         $canModerate = $this->visitor->isModerator();
         $initialPage = $this->manager->getPage($reference, null, null, $canModerate);
         $initialPage['canModerate'] = $canModerate;
@@ -107,9 +108,9 @@ class DiscussionExtension extends AbstractExtension
         return $twig->render('@bolt-discussion/mount.html.twig', $context);
     }
 
-    public function count(string $reference): int
+    public function count(string|Stringable $reference): int
     {
-        return $this->comments->countPublished($reference);
+        return $this->comments->countPublished((string) $reference);
     }
 
     /**

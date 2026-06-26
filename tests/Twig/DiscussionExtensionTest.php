@@ -112,6 +112,35 @@ class DiscussionExtensionTest extends TestCase
         self::assertStringNotContainsString('Loading discussion', $html);
     }
 
+    public function testStringableReferenceCanBeRenderedFromTextFieldValue(): void
+    {
+        $html = $this->renderWith([], new Markup('rockfest-2027-lineup', 'UTF-8'));
+
+        self::assertStringContainsString('data-reference="rockfest-2027-lineup"', $html);
+        self::assertStringContainsString('data-list-url="/discussion/api/rockfest-2027-lineup"', $html);
+    }
+
+    public function testStringableReferenceCanBeCountedFromTextFieldValue(): void
+    {
+        $comments = $this->createMock(DiscussionCommentRepository::class);
+        $comments->expects(self::once())
+            ->method('countPublished')
+            ->with('rockfest-2027-lineup')
+            ->willReturn(12);
+
+        $extension = new DiscussionExtension(
+            $this->createMock(DiscussionConfig::class),
+            $this->createMock(DiscussionManager::class),
+            $this->createMock(VisitorTokenProvider::class),
+            $comments,
+            $this->createMock(UrlGeneratorInterface::class),
+            $this->createMock(CsrfTokenManagerInterface::class),
+            $this->createMock(TranslatorInterface::class),
+        );
+
+        self::assertSame(12, $extension->count(new Markup('rockfest-2027-lineup', 'UTF-8')));
+    }
+
     public function testComposerTextCanBeOverriddenPerInstance(): void
     {
         $html = $this->renderWith([
@@ -185,8 +214,9 @@ class DiscussionExtensionTest extends TestCase
     /**
      * @param array<string, mixed> $options
      */
-    private function renderWith(array $options): string
+    private function renderWith(array $options, string|\Stringable $reference = 'article-1'): string
     {
+        $expectedReference = (string) $reference;
         $config = $this->createMock(DiscussionConfig::class);
         $config->method('pollInterval')->willReturn(10000);
         $config->method('reactionsEnabled')->willReturn(true);
@@ -196,7 +226,10 @@ class DiscussionExtensionTest extends TestCase
         $config->method('maxLength')->willReturn(2000);
 
         $manager = $this->createMock(DiscussionManager::class);
-        $manager->method('getPage')->willReturn([
+        $manager->expects(self::once())
+            ->method('getPage')
+            ->with($expectedReference, null, null, false)
+            ->willReturn([
             'comments' => [],
             'lastId' => 0,
             'hasMore' => false,
@@ -242,6 +275,6 @@ class DiscussionExtensionTest extends TestCase
             $translator,
         );
 
-        return $extension->render($twig, 'article-1', $options);
+        return $extension->render($twig, $reference, $options);
     }
 }
