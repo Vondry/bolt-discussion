@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -50,8 +51,8 @@ class DiscussionAdminController extends AbstractController implements BackendZon
         $comments = $this->comments->findForAdmin($reference);
         $ids = array_map(static fn (DiscussionComment $c): int => (int) $c->getId(), $comments);
         $reactions = $this->reactions->summaryFor($ids, '');
-        $replyCountForms = $this->replyCountForms();
         $locale = $this->translator instanceof LocaleAwareInterface ? $this->translator->getLocale() : 'en';
+        $replyCountForms = $this->replyCountForms($locale);
 
         return $this->render('@bolt-discussion/backend/thread.html.twig', [
             'reference' => $reference,
@@ -122,9 +123,9 @@ class DiscussionAdminController extends AbstractController implements BackendZon
     /**
      * @return array<string, string>
      */
-    private function replyCountForms(): array
+    private function replyCountForms(string $locale): array
     {
-        return $this->pluralForms('reply_count');
+        return $this->pluralForms('reply_count', $locale);
     }
 
     /**
@@ -137,23 +138,31 @@ class DiscussionAdminController extends AbstractController implements BackendZon
 
     private function commentCountLabel(int $count, string $locale): string
     {
-        return $this->pluralLabel($count, $locale, $this->pluralForms('comment_count'), '%count% comments');
+        return $this->pluralLabel($count, $locale, $this->pluralForms('comment_count', $locale), '%count% comments');
     }
 
     /**
-     * Reads the CLDR plural forms (one/few/many/other) for a translation key.
-     * Missing forms are omitted so callers can fall back to "other".
+     * Reads the CLDR plural forms (one/few/many/other) for a translation key
+     * straight from the message catalogue, taking only the categories a locale
+     * actually defines (Czech has no "many", etc.). Reading the catalogue
+     * instead of probing each key with trans() avoids flagging the absent
+     * categories as missing translations.
      *
      * @return array<string, string>
      */
-    private function pluralForms(string $key): array
+    private function pluralForms(string $key, string $locale): array
     {
+        if (! $this->translator instanceof TranslatorBagInterface) {
+            return [];
+        }
+
+        $messages = $this->translator->getCatalogue($locale)->all(self::DOMAIN);
+
         $forms = [];
         foreach (['one', 'few', 'many', 'other'] as $category) {
             $formKey = $key . '.' . $category;
-            $translated = $this->translator->trans($formKey, [], self::DOMAIN);
-            if ($translated !== $formKey) {
-                $forms[$category] = $translated;
+            if (isset($messages[$formKey])) {
+                $forms[$category] = $messages[$formKey];
             }
         }
 

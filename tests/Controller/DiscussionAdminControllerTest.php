@@ -18,6 +18,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Translation\MessageCatalogue;
+use Symfony\Component\Translation\MessageCatalogueInterface;
+use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -204,15 +207,10 @@ class DiscussionAdminControllerTest extends TestCase
             ->with([4, 3, 1, 2], '')
             ->willReturn($reactionSummary);
 
-        $translator = new class implements TranslatorInterface, LocaleAwareInterface {
+        $translator = new class implements TranslatorInterface, LocaleAwareInterface, TranslatorBagInterface {
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
-                return match ($id) {
-                    'reply_count.one' => '%count% odpověď',
-                    'reply_count.few' => '%count% odpovědi',
-                    'reply_count.other' => '%count% odpovědí',
-                    default => strtr((string) $id, $parameters),
-                };
+                return strtr((string) $id, $parameters);
             }
 
             public function getLocale(): string
@@ -222,6 +220,26 @@ class DiscussionAdminControllerTest extends TestCase
 
             public function setLocale(string $locale): void
             {
+            }
+
+            public function getCatalogue(?string $locale = null): MessageCatalogueInterface
+            {
+                // Czech defines one/few/other (no "many") — mirrors the real catalogue.
+                return new MessageCatalogue($locale ?? 'cs', [
+                    'bolt_discussion' => [
+                        'reply_count.one' => '%count% odpověď',
+                        'reply_count.few' => '%count% odpovědi',
+                        'reply_count.other' => '%count% odpovědí',
+                        'comment_count.one' => '%count% komentář',
+                        'comment_count.few' => '%count% komentáře',
+                        'comment_count.other' => '%count% komentářů',
+                    ],
+                ]);
+            }
+
+            public function getCatalogues(): array
+            {
+                return [$this->getCatalogue()];
             }
         };
 
@@ -264,6 +282,9 @@ class DiscussionAdminControllerTest extends TestCase
             'few' => '%count% odpovědi',
             'other' => '%count% odpovědí',
         ], $controller->renderedParameters['replyCountForms']);
+
+        // 4 comments → Czech "few" form (komentáře), not the bare plural.
+        self::assertSame('4 komentáře', $controller->renderedParameters['commentCountLabel']);
 
         $threads = $controller->renderedParameters['threads'];
         self::assertCount(2, $threads);
