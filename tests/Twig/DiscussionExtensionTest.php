@@ -16,6 +16,7 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Twig\Markup;
 use Twig\TwigFilter;
 
 class DiscussionExtensionTest extends TestCase
@@ -111,21 +112,25 @@ class DiscussionExtensionTest extends TestCase
         self::assertStringNotContainsString('Loading discussion', $html);
     }
 
-    public function testComposerPlaceholdersCanBeOverriddenPerInstance(): void
+    public function testComposerTextCanBeOverriddenPerInstance(): void
     {
         $html = $this->renderWith([
             'namePlaceholder' => 'Your nickname',
             'commentPlaceholder' => 'What should we book?',
+            'replyPlaceholder' => 'Reply with your pick',
             'submitLabel' => 'Send it',
         ]);
 
-        // Server-rendered composer uses the overridden copy …
+        // Server-rendered composer uses the overridden copy.
         self::assertStringContainsString('placeholder="Your nickname"', $html);
         self::assertStringContainsString('placeholder="What should we book?"', $html);
         self::assertStringContainsString('>Send it</button>', $html);
 
-        // … and so do the labels handed to the JS for reply forms / hydration.
-        self::assertStringContainsString('What should we book?', $html);
+        // JS-created forms use the same overridden labels from data-i18n.
+        self::assertStringContainsString('&quot;name&quot;:&quot;Your nickname&quot;', $html);
+        self::assertStringContainsString('&quot;commentPlaceholder&quot;:&quot;What should we book?&quot;', $html);
+        self::assertStringContainsString('&quot;replyPlaceholder&quot;:&quot;Reply with your pick&quot;', $html);
+        self::assertStringContainsString('&quot;post&quot;:&quot;Send it&quot;', $html);
     }
 
     public function testComposerPlaceholdersFallBackToTranslatedDefaults(): void
@@ -142,6 +147,39 @@ class DiscussionExtensionTest extends TestCase
 
         self::assertStringContainsString('placeholder="Your name"', $html);
         self::assertStringContainsString('placeholder="Join the discussion…"', $html);
+    }
+
+    public function testStringableComposerPlaceholdersCanBeOverriddenPerInstance(): void
+    {
+        $html = $this->renderWith([
+            'namePlaceholder' => new Markup('Festival name', 'UTF-8'),
+            'commentPlaceholder' => new Markup('Ask the band', 'UTF-8'),
+            'replyPlaceholder' => new Markup('Reply with a reason', 'UTF-8'),
+            'submitLabel' => new Markup('Send pick', 'UTF-8'),
+        ]);
+
+        self::assertStringContainsString('placeholder="Festival name"', $html);
+        self::assertStringContainsString('placeholder="Ask the band"', $html);
+        self::assertStringContainsString('>Send pick</button>', $html);
+        self::assertStringContainsString('&quot;replyPlaceholder&quot;:&quot;Reply with a reason&quot;', $html);
+        self::assertStringContainsString('&quot;post&quot;:&quot;Send pick&quot;', $html);
+    }
+
+    public function testReplyPlaceholderFallsBackToOverriddenCommentPlaceholder(): void
+    {
+        $html = $this->renderWith(['commentPlaceholder' => 'Ask the band']);
+
+        self::assertStringContainsString('&quot;replyPlaceholder&quot;:&quot;Ask the band&quot;', $html);
+    }
+
+    public function testExplicitReplyPlaceholderWinsOverCommentPlaceholderFallback(): void
+    {
+        $html = $this->renderWith([
+            'commentPlaceholder' => 'Ask the band',
+            'replyPlaceholder' => 'Reply to this comment',
+        ]);
+
+        self::assertStringContainsString('&quot;replyPlaceholder&quot;:&quot;Reply to this comment&quot;', $html);
     }
 
     /**

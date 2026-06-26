@@ -11,6 +11,7 @@ use BoltDiscussion\Service\VisitorTokenProvider;
 use DateTimeImmutable;
 use DateTimeInterface;
 use MessageFormatter;
+use Stringable;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
@@ -144,11 +145,17 @@ class DiscussionExtension extends AbstractExtension
         // Per-instance overrides, so each discussion() call can set its own
         // composer copy (already translated by the caller if needed). Falls back
         // to the translated defaults above.
+        $overrides = [];
         foreach (self::LABEL_OPTIONS as $option => $label) {
-            $value = $options[$option] ?? null;
-            if (is_string($value) && trim($value) !== '') {
+            $value = $this->stringOption($options[$option] ?? null);
+            if ($value !== null) {
                 $labels[$label] = $value;
+                $overrides[$option] = true;
             }
+        }
+
+        if (isset($overrides['commentPlaceholder']) && ! isset($overrides['replyPlaceholder'])) {
+            $labels['replyPlaceholder'] = $labels['commentPlaceholder'];
         }
 
         // CLDR plural forms for the collapsed reply count; the JS picks one with
@@ -156,6 +163,17 @@ class DiscussionExtension extends AbstractExtension
         $labels['replyCount'] = $this->replyCountForms();
 
         return $labels;
+    }
+
+    private function stringOption(mixed $value): ?string
+    {
+        if (! is_string($value) && ! $value instanceof Stringable) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        return trim($value) === '' ? null : $value;
     }
 
     /**
