@@ -13,6 +13,7 @@ use BoltDiscussion\Repository\DiscussionReactionRepository;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Asset\Packages;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -32,6 +33,7 @@ class DiscussionManager
         private readonly DiscussionConfig $config,
         private readonly SpamChecker $spamChecker,
         private readonly VisitorTokenProvider $visitor,
+        private readonly Packages $packages,
         #[Autowire(param: 'kernel.secret')]
         private readonly string $ipHashKey,
     ) {
@@ -303,7 +305,7 @@ class DiscussionManager
      */
     private function serializeComment(DiscussionComment $comment, array $reactionSummary): array
     {
-        return [
+        $data = [
             'id' => (int) $comment->getId(),
             'parentId' => $comment->getParent()?->getId(),
             'author' => $comment->getAuthorName(),
@@ -313,6 +315,15 @@ class DiscussionManager
             'createdAt' => $comment->getCreatedAt()->format(DateTimeInterface::ATOM),
             'reactions' => $this->serializeReactions($reactionSummary),
         ];
+
+        // Include avatar URL if the user has one configured
+        $author = $comment->getAuthor();
+        if ($author !== null && $author->getAvatar() !== null && $author->getAvatar() !== '') {
+            // Use Symfony's asset packages to generate the proper URL for the avatar file
+            $data['avatarUrl'] = $this->packages->getUrl($author->getAvatar(), 'files');
+        }
+
+        return $data;
     }
 
     /**

@@ -265,6 +265,8 @@ class DiscussionExtension extends AbstractExtension
         $comment['createdLabel'] = $createdAt->format('Y-m-d H:i');
         $comment['createdTitle'] = $createdAt->format(DateTimeInterface::ATOM);
 
+        // avatarUrl, when present, is passed through from the DiscussionManager serialization.
+
         return $comment;
     }
 

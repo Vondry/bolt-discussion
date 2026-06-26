@@ -18,6 +18,7 @@ use BoltDiscussion\Service\VisitorTokenProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -32,6 +33,7 @@ class DiscussionManagerTest extends TestCase
     private DiscussionConfig&MockObject $config;
     private SpamChecker&MockObject $spamChecker;
     private VisitorTokenProvider&MockObject $visitor;
+    private Packages&MockObject $packages;
     private DiscussionManager $manager;
 
     protected function setUp(): void
@@ -42,6 +44,7 @@ class DiscussionManagerTest extends TestCase
         $this->config = $this->createMock(DiscussionConfig::class);
         $this->spamChecker = $this->createMock(SpamChecker::class);
         $this->visitor = $this->createMock(VisitorTokenProvider::class);
+        $this->packages = $this->createMock(Packages::class);
 
         // Sensible defaults; individual tests override as needed.
         $this->config->method('maxLength')->willReturn(2000);
@@ -64,6 +67,7 @@ class DiscussionManagerTest extends TestCase
             $this->config,
             $this->spamChecker,
             $this->visitor,
+            $this->packages,
             'test-ip-hash-key',
         );
     }
@@ -86,7 +90,7 @@ class DiscussionManagerTest extends TestCase
         $this->visitor->method('getUser')->willReturn(null);
         $this->config = $this->createMock(DiscussionConfig::class);
 
-        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $this->config, $this->spamChecker, $this->visitor, 'test-ip-hash-key');
+        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $this->config, $this->spamChecker, $this->visitor, $this->packages, 'test-ip-hash-key');
         $this->config->method('maxLength')->willReturn(5);
 
         $this->expectException(ValidationException::class);
@@ -136,7 +140,7 @@ class DiscussionManagerTest extends TestCase
         $config->method('maxLength')->willReturn(2000);
         $config->method('requireName')->willReturn(true);
         $config->method('isQueueModeration')->willReturn(true);
-        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, 'test-ip-hash-key');
+        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, $this->packages, 'test-ip-hash-key');
 
         $this->visitor->method('getUser')->willReturn(null);
         $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
@@ -153,7 +157,7 @@ class DiscussionManagerTest extends TestCase
         $config = $this->createMock(DiscussionConfig::class);
         $config->method('maxLength')->willReturn(2000);
         $config->method('isQueueModeration')->willReturn(true);
-        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, 'test-ip-hash-key');
+        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, $this->packages, 'test-ip-hash-key');
 
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn(7);
@@ -409,5 +413,81 @@ class DiscussionManagerTest extends TestCase
         $property->setValue($comment, $id);
 
         return $comment;
+    }
+
+    public function testAuthenticatedUserWithAvatarIncludesAvatarUrl(): void
+    {
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn(7);
+        $user->method('getDisplayName')->willReturn('Admin');
+        $user->method('getAvatar')->willReturn('avatars/user-7.jpg');
+        
+        $this->visitor->method('getUser')->willReturn($user);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        
+        $this->packages->expects(self::once())
+            ->method('getUrl')
+            ->with('avatars/user-7.jpg', 'files')
+            ->willReturn('/files/avatars/user-7.jpg');
+
+        $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
+
+        self::assertSame('published', $result['status']);
+        self::assertArrayHasKey('avatarUrl', $result['comment']);
+        self::assertSame('/files/avatars/user-7.jpg', $result['comment']['avatarUrl']);
+    }
+
+    public function testAuthenticatedUserWithoutAvatarDoesNotIncludeAvatarUrl(): void
+    {
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn(7);
+        $user->method('getDisplayName')->willReturn('Admin');
+        $user->method('getAvatar')->willReturn(null);
+        
+        $this->visitor->method('getUser')->willReturn($user);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        
+        $this->packages->expects(self::never())->method('getUrl');
+
+        $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
+
+        self::assertSame('published', $result['status']);
+        self::assertArrayNotHasKey('avatarUrl', $result['comment']);
+    }
+
+    public function testAuthenticatedUserWithEmptyAvatarDoesNotIncludeAvatarUrl(): void
+    {
+        $user = $this->createMock(User::class);
+        $user->method('getId')->willReturn(7);
+        $user->method('getDisplayName')->willReturn('Admin');
+        $user->method('getAvatar')->willReturn('');
+
+        $this->visitor->method('getUser')->willReturn($user);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+
+        $this->packages->expects(self::never())->method('getUrl');
+
+        $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
+
+        self::assertSame('published', $result['status']);
+        self::assertArrayNotHasKey('avatarUrl', $result['comment']);
+    }
+
+    public function testAnonymousUserNeverIncludesAvatarUrl(): void
+    {
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        $this->spamChecker->method('isRateLimited')->willReturn(false);
+        
+        $this->packages->expects(self::never())->method('getUrl');
+
+        $result = $this->manager->createComment('demo', ['body' => 'Hello', 'authorName' => 'Jo'], $this->request());
+
+        self::assertSame('published', $result['status']);
+        self::assertArrayNotHasKey('avatarUrl', $result['comment']);
     }
 }

@@ -14,6 +14,7 @@ use BoltDiscussion\Service\SpamChecker;
 use BoltDiscussion\Service\VisitorTokenProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Asset\Packages;
 
 /**
  * Admin-facing moderation actions used by the backend controller and the
@@ -30,6 +31,7 @@ class DiscussionModerationTest extends TestCase
             $this->createMock(DiscussionConfig::class),
             $this->createMock(SpamChecker::class),
             $this->createMock(VisitorTokenProvider::class),
+            $this->createMock(Packages::class),
             'test-ip-hash-key',
         );
     }

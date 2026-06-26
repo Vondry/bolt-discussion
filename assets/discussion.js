@@ -431,7 +431,7 @@ class DiscussionWidget {
         wrap.dataset.id = comment.id;
 
         const rowEl = el('div', `${NS}__row`);
-        rowEl.appendChild(avatarFor(comment.author));
+        rowEl.appendChild(avatarFor(comment.author, comment.avatarUrl));
 
         const main = el('div', `${NS}__main`);
 
@@ -811,11 +811,22 @@ const NAME_HUE = (name) => {
     return h % 360;
 };
 
-/** Author avatar: initials on a colour derived from the name. */
-function avatarFor(name) {
-    const av = el('span', `${NS}__avatar`, NAME_INITIALS(name));
-    av.style.setProperty('--bd-avatar-hue', String(NAME_HUE(name)));
+/** Author avatar: image if available, otherwise initials on a colour derived from the name. */
+function avatarFor(name, avatarUrl) {
+    const av = el('span', `${NS}__avatar`);
     av.setAttribute('aria-hidden', 'true');
+    
+    if (avatarUrl) {
+        const img = el('img');
+        img.src = avatarUrl;
+        img.alt = name;
+        img.className = `${NS}__avatar-img`;
+        av.appendChild(img);
+    } else {
+        av.textContent = NAME_INITIALS(name);
+        av.style.setProperty('--bd-avatar-hue', String(NAME_HUE(name)));
+    }
+    
     return av;
 }
 

@@ -18,8 +18,14 @@
              data-id="{{ comment.id }}">
         <div class="bolt-discussion__row">
             <span class="bolt-discussion__avatar"
-                  style="--bd-avatar-hue: {{ comment.avatarHue }}"
-                  aria-hidden="true">{{ comment.initials }}</span>
+                  {% if not comment.avatarUrl is defined or not comment.avatarUrl %}style="--bd-avatar-hue: {{ comment.avatarHue }}"{% endif %}
+                  aria-hidden="true">
+                {% if comment.avatarUrl is defined and comment.avatarUrl %}
+                    <img src="{{ comment.avatarUrl }}" alt="{{ comment.author }}" class="bolt-discussion__avatar-img">
+                {% else %}
+                    {{ comment.initials }}
+                {% endif %}
+            </span>
             <div class="bolt-discussion__main">
                 <div class="bolt-discussion__meta">
                     <span class="bolt-discussion__author">{{ comment.author }}</span>
