@@ -13,6 +13,10 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Translation\MessageCatalogue;
+use Symfony\Component\Translation\MessageCatalogueInterface;
+use Symfony\Component\Translation\TranslatorBagInterface;
+use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -71,15 +75,7 @@ class DiscussionExtensionTest extends TestCase
         $csrf = $this->createMock(CsrfTokenManagerInterface::class);
         $csrf->method('getToken')->willReturn(new CsrfToken('bolt_discussion', 'csrf-value'));
 
-        $translator = $this->createMock(TranslatorInterface::class);
-        $translator->method('getLocale')->willReturn('en');
-        $translator->method('trans')->willReturnCallback(
-            static fn (string $key): string => match ($key) {
-                'reply_count.one' => '%count% reply',
-                'reply_count.other' => '%count% replies',
-                default => $key,
-            }
-        );
+        $translator = $this->fakeTranslator();
 
         $loader = new FilesystemLoader();
         $loader->addPath(\dirname(__DIR__, 2) . '/templates', 'bolt-discussion');
@@ -110,6 +106,15 @@ class DiscussionExtensionTest extends TestCase
         self::assertStringContainsString('\u003C\/script\u003E\u003Cscript\u003E', $html);
         self::assertStringNotContainsString('</script><script>alert(1)</script>', $html);
         self::assertStringNotContainsString('Loading discussion', $html);
+
+        // Only the categories English defines are emitted, and absent ones are
+        // never looked up via trans() (which would record them as missing).
+        self::assertStringContainsString(
+            '&quot;replyCount&quot;:{&quot;one&quot;:&quot;%count% reply&quot;,&quot;other&quot;:&quot;%count% replies&quot;}',
+            $html
+        );
+        self::assertNotContains('reply_count.many', $translator->transKeys);
+        self::assertNotContains('reply_count.few', $translator->transKeys);
     }
 
     public function testStringableReferenceCanBeRenderedFromTextFieldValue(): void
@@ -254,11 +259,9 @@ class DiscussionExtensionTest extends TestCase
         $csrf = $this->createMock(CsrfTokenManagerInterface::class);
         $csrf->method('getToken')->willReturn(new CsrfToken('bolt_discussion', 'csrf-value'));
 
-        // Default translator: every key maps to itself, so the untouched labels
-        // render as their English source strings.
-        $translator = $this->createMock(TranslatorInterface::class);
-        $translator->method('getLocale')->willReturn('en');
-        $translator->method('trans')->willReturnCallback(static fn (string $key): string => $key);
+        // Default translator: identity trans() so untouched labels render as
+        // their English source strings, plus a real catalogue for plural forms.
+        $translator = $this->fakeTranslator();
 
         $loader = new FilesystemLoader();
         $loader->addPath(\dirname(__DIR__, 2) . '/templates', 'bolt-discussion');
@@ -276,5 +279,56 @@ class DiscussionExtensionTest extends TestCase
         );
 
         return $extension->render($twig, $reference, $options);
+    }
+
+    /**
+     * Translator double that mirrors the real one: identity trans() plus a
+     * message catalogue (TranslatorBagInterface) exposing only the plural
+     * categories a locale actually defines — English has one/other, no "many".
+     * Records the keys passed to trans() so tests can assert that the absent
+     * categories are never looked up (which would log them as missing).
+     */
+    private function fakeTranslator(string $locale = 'en'): TranslatorInterface&LocaleAwareInterface&TranslatorBagInterface
+    {
+        return new class($locale) implements TranslatorInterface, LocaleAwareInterface, TranslatorBagInterface {
+            /** @var list<string> */
+            public array $transKeys = [];
+
+            public function __construct(private string $locale)
+            {
+            }
+
+            public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                $this->transKeys[] = (string) $id;
+
+                return strtr((string) $id, $parameters);
+            }
+
+            public function getLocale(): string
+            {
+                return $this->locale;
+            }
+
+            public function setLocale(string $locale): void
+            {
+                $this->locale = $locale;
+            }
+
+            public function getCatalogue(?string $locale = null): MessageCatalogueInterface
+            {
+                return new MessageCatalogue($locale ?? $this->locale, [
+                    'bolt_discussion' => [
+                        'reply_count.one' => '%count% reply',
+                        'reply_count.other' => '%count% replies',
+                    ],
+                ]);
+            }
+
+            public function getCatalogues(): array
+            {
+                return [$this->getCatalogue()];
+            }
+        };
     }
 }

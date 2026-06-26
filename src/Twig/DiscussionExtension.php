@@ -14,6 +14,7 @@ use MessageFormatter;
 use Stringable;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -68,7 +69,7 @@ class DiscussionExtension extends AbstractExtension
         $initialPage = $this->manager->getPage($reference, null, null, $canModerate);
         $initialPage['canModerate'] = $canModerate;
         $locale = $this->translator instanceof LocaleAwareInterface ? $this->translator->getLocale() : 'en';
-        $replyCountForms = $this->replyCountForms();
+        $replyCountForms = $this->replyCountForms($locale);
 
         $context = [
             'reference' => $reference,
@@ -96,7 +97,7 @@ class DiscussionExtension extends AbstractExtension
                 $this->urlGenerator->generate('bolt_discussion_api_delete', ['id' => 0])
             ),
             'locale' => $locale,
-            'labels' => $this->jsLabels($options),
+            'labels' => $this->jsLabels($options, $locale),
             'initialPage' => $initialPage,
             'initialJson' => json_encode(
                 $initialPage,
@@ -120,7 +121,7 @@ class DiscussionExtension extends AbstractExtension
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      */
-    private function jsLabels(array $options = []): array
+    private function jsLabels(array $options, string $locale): array
     {
         $sources = [
             'empty' => 'Be the first to comment.',
@@ -161,7 +162,7 @@ class DiscussionExtension extends AbstractExtension
 
         // CLDR plural forms for the collapsed reply count; the JS picks one with
         // Intl.PluralRules for the current locale and substitutes %count%.
-        $labels['replyCount'] = $this->replyCountForms();
+        $labels['replyCount'] = $this->replyCountForms($locale);
 
         return $labels;
     }
@@ -178,16 +179,26 @@ class DiscussionExtension extends AbstractExtension
     }
 
     /**
+     * CLDR plural forms (one/few/many/other) for the reply count, taken only
+     * for the categories a locale actually defines (Czech has no "many", etc.).
+     * Reading the catalogue rather than probing each key with trans() avoids
+     * flagging the absent categories as missing translations.
+     *
      * @return array<string, string>
      */
-    private function replyCountForms(): array
+    private function replyCountForms(string $locale): array
     {
+        if (! $this->translator instanceof TranslatorBagInterface) {
+            return [];
+        }
+
+        $messages = $this->translator->getCatalogue($locale)->all(self::DOMAIN);
+
         $forms = [];
         foreach (['one', 'few', 'many', 'other'] as $category) {
             $key = 'reply_count.' . $category;
-            $translated = $this->translator->trans($key, [], self::DOMAIN);
-            if ($translated !== $key) {
-                $forms[$category] = $translated;
+            if (isset($messages[$key])) {
+                $forms[$category] = $messages[$key];
             }
         }
 
