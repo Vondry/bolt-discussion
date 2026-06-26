@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BoltDiscussion\Service;
 
+use Bolt\Utils\ThumbnailHelper;
 use BoltDiscussion\Entity\DiscussionComment;
 use BoltDiscussion\Entity\DiscussionReaction;
 use BoltDiscussion\Enum\CommentStatus;
@@ -13,7 +14,6 @@ use BoltDiscussion\Repository\DiscussionReactionRepository;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Asset\Packages;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -33,7 +33,7 @@ class DiscussionManager
         private readonly DiscussionConfig $config,
         private readonly SpamChecker $spamChecker,
         private readonly VisitorTokenProvider $visitor,
-        private readonly Packages $packages,
+        private readonly ThumbnailHelper $thumbnails,
         #[Autowire(param: 'kernel.secret')]
         private readonly string $ipHashKey,
     ) {
@@ -316,11 +316,13 @@ class DiscussionManager
             'reactions' => $this->serializeReactions($reactionSummary),
         ];
 
-        // Include avatar URL if the user has one configured
+        // Include avatar URL if the user has one configured. Uses Bolt's
+        // thumbnail pipeline (the same /thumbs/… route Bolt renders avatars
+        // with), so it works regardless of how asset packages are configured.
         $author = $comment->getAuthor();
-        if ($author !== null && $author->getAvatar() !== null && $author->getAvatar() !== '') {
-            // Use Symfony's asset packages to generate the proper URL for the avatar file
-            $data['avatarUrl'] = $this->packages->getUrl($author->getAvatar(), 'files');
+        $avatar = $author?->getAvatar();
+        if ($avatar !== null && $avatar !== '') {
+            $data['avatarUrl'] = $this->thumbnails->path($avatar, 64, 64, null, null, 'crop');
         }
 
         return $data;
