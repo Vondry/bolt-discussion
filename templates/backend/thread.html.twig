@@ -90,7 +90,7 @@
         <p>{{ 'No comments.'|trans({}, d_domain) }}</p>
     {% else %}
         <div class="mb-3 text-muted">
-            {{ comments|length }} {{ 'Comments'|trans({}, d_domain) }}
+            {{ commentCountLabel }}
         </div>
 
         {% for thread in threads %}

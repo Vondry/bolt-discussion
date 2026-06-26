@@ -66,5 +66,9 @@ reply_count:
   one: '%count% odpověď'
   few: '%count% odpovědi'
   other: '%count% odpovědí'
+comment_count:
+  one: '%count% komentář'
+  few: '%count% komentáře'
+  other: '%count% komentářů'
 'Hide replies': 'Skrýt odpovědi'
 'Add reaction': 'Přidat reakci'

@@ -36,14 +36,16 @@ class TranslationCatalogueTest extends TestCase
         $english = $this->flatten($this->catalogue('en'));
         $translated = $this->flatten($this->catalogue($locale));
 
+        $isPluralKey = static fn (string $key): bool => str_starts_with($key, 'reply_count.')
+            || str_starts_with($key, 'comment_count.');
         $englishMessages = array_filter(
             $english,
-            static fn (string $key): bool => ! str_starts_with($key, 'reply_count.'),
+            static fn (string $key): bool => ! $isPluralKey($key),
             ARRAY_FILTER_USE_KEY
         );
         $translatedMessages = array_filter(
             $translated,
-            static fn (string $key): bool => ! str_starts_with($key, 'reply_count.'),
+            static fn (string $key): bool => ! $isPluralKey($key),
             ARRAY_FILTER_USE_KEY
         );
 
@@ -66,22 +68,28 @@ class TranslationCatalogueTest extends TestCase
             );
         }
 
-        $pluralKeys = array_map(
-            static fn (string $category): string => 'reply_count.' . $category,
-            self::PLURAL_CATEGORIES[$locale]
-        );
-        $actualPluralKeys = array_values(array_filter(
-            array_keys($translated),
-            static fn (string $key): bool => str_starts_with($key, 'reply_count.')
-        ));
-
-        self::assertSame($pluralKeys, $actualPluralKeys, sprintf('Plural categories differ for locale "%s".', $locale));
-        foreach ($pluralKeys as $key) {
-            self::assertStringContainsString(
-                '%count%',
-                $translated[$key],
-                sprintf('Plural translation "%s" must contain %%count%%.', $key)
+        foreach (['reply_count', 'comment_count'] as $pluralPrefix) {
+            $pluralKeys = array_map(
+                static fn (string $category): string => $pluralPrefix . '.' . $category,
+                self::PLURAL_CATEGORIES[$locale]
             );
+            $actualPluralKeys = array_values(array_filter(
+                array_keys($translated),
+                static fn (string $key): bool => str_starts_with($key, $pluralPrefix . '.')
+            ));
+
+            self::assertSame(
+                $pluralKeys,
+                $actualPluralKeys,
+                sprintf('Plural categories differ for "%s" in locale "%s".', $pluralPrefix, $locale)
+            );
+            foreach ($pluralKeys as $key) {
+                self::assertStringContainsString(
+                    '%count%',
+                    $translated[$key],
+                    sprintf('Plural translation "%s" must contain %%count%%.', $key)
+                );
+            }
         }
     }
 

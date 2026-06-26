@@ -65,5 +65,8 @@
 reply_count:
   one: '%count% antwoord'
   other: '%count% antwoorden'
+comment_count:
+  one: '%count% reactie'
+  other: '%count% reacties'
 'Hide replies': 'Antwoorden verbergen'
 'Add reaction': 'Emoji-reactie toevoegen'

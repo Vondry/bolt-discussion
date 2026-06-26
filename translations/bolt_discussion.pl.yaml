@@ -67,5 +67,10 @@ reply_count:
   few: '%count% odpowiedzi'
   many: '%count% odpowiedzi'
   other: '%count% odpowiedzi'
+comment_count:
+  one: '%count% komentarz'
+  few: '%count% komentarze'
+  many: '%count% komentarzy'
+  other: '%count% komentarzy'
 'Hide replies': 'Ukryj odpowiedzi'
 'Add reaction': 'Dodaj reakcję'

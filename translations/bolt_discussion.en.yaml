@@ -67,5 +67,8 @@
 reply_count:
   one: '%count% reply'
   other: '%count% replies'
+comment_count:
+  one: '%count% comment'
+  other: '%count% comments'
 'Hide replies': 'Hide replies'
 'Add reaction': 'Add reaction'

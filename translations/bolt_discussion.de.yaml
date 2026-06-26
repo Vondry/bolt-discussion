@@ -65,5 +65,8 @@
 reply_count:
   one: '%count% Antwort'
   other: '%count% Antworten'
+comment_count:
+  one: '%count% Kommentar'
+  other: '%count% Kommentare'
 'Hide replies': 'Antworten ausblenden'
 'Add reaction': 'Reaktion hinzufügen'

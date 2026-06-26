@@ -51,10 +51,12 @@ class DiscussionAdminController extends AbstractController implements BackendZon
         $ids = array_map(static fn (DiscussionComment $c): int => (int) $c->getId(), $comments);
         $reactions = $this->reactions->summaryFor($ids, '');
         $replyCountForms = $this->replyCountForms();
+        $locale = $this->translator instanceof LocaleAwareInterface ? $this->translator->getLocale() : 'en';
 
         return $this->render('@bolt-discussion/backend/thread.html.twig', [
             'reference' => $reference,
             'comments' => $comments,
+            'commentCountLabel' => $this->commentCountLabel(count($comments), $locale),
             'threads' => $this->buildThreads($comments, $replyCountForms),
             'reactions' => $reactions,
             'replyCountForms' => $replyCountForms,
@@ -122,11 +124,35 @@ class DiscussionAdminController extends AbstractController implements BackendZon
      */
     private function replyCountForms(): array
     {
+        return $this->pluralForms('reply_count');
+    }
+
+    /**
+     * @param array<string, string> $forms
+     */
+    private function replyCountLabel(int $count, string $locale, array $forms): string
+    {
+        return $this->pluralLabel($count, $locale, $forms, '%count% replies');
+    }
+
+    private function commentCountLabel(int $count, string $locale): string
+    {
+        return $this->pluralLabel($count, $locale, $this->pluralForms('comment_count'), '%count% comments');
+    }
+
+    /**
+     * Reads the CLDR plural forms (one/few/many/other) for a translation key.
+     * Missing forms are omitted so callers can fall back to "other".
+     *
+     * @return array<string, string>
+     */
+    private function pluralForms(string $key): array
+    {
         $forms = [];
         foreach (['one', 'few', 'many', 'other'] as $category) {
-            $key = 'reply_count.' . $category;
-            $translated = $this->translator->trans($key, [], self::DOMAIN);
-            if ($translated !== $key) {
+            $formKey = $key . '.' . $category;
+            $translated = $this->translator->trans($formKey, [], self::DOMAIN);
+            if ($translated !== $formKey) {
                 $forms[$category] = $translated;
             }
         }
@@ -135,9 +161,12 @@ class DiscussionAdminController extends AbstractController implements BackendZon
     }
 
     /**
+     * Picks the correct plural form for $count using the locale's CLDR rules
+     * (e.g. Czech: 1 → one, 2-4 → few, 5+ → other) and substitutes %count%.
+     *
      * @param array<string, string> $forms
      */
-    private function replyCountLabel(int $count, string $locale, array $forms): string
+    private function pluralLabel(int $count, string $locale, array $forms, string $fallback): string
     {
         $category = $count === 1 ? 'one' : 'other';
         if (class_exists(MessageFormatter::class)) {
@@ -151,7 +180,7 @@ class DiscussionAdminController extends AbstractController implements BackendZon
             }
         }
 
-        $template = $forms[$category] ?? $forms['other'] ?? '%count% replies';
+        $template = $forms[$category] ?? $forms['other'] ?? $fallback;
 
         return str_replace('%count%', (string) $count, $template);
     }
