@@ -127,7 +127,7 @@ class DiscussionApiController extends ExtensionController
         }
 
         try {
-            $result = $this->manager->toggleReaction($comment, (string) ($input['emoji'] ?? ''));
+            $result = $this->manager->toggleReaction($comment, (string) ($input['emoji'] ?? ''), $request);
         } catch (ValidationException $e) {
             return $this->finish(new JsonResponse(['error' => $this->t($e->getMessage(), $e->getParameters())], Response::HTTP_UNPROCESSABLE_ENTITY));
         }

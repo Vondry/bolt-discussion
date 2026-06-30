@@ -12,9 +12,9 @@ use Bolt\Discussion\Repository\DiscussionReactionRepository;
 use Bolt\Discussion\Service\DiscussionManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -207,7 +207,7 @@ class DiscussionAdminControllerTest extends TestCase
             ->with([4, 3, 1, 2], '')
             ->willReturn($reactionSummary);
 
-        $translator = new class implements TranslatorInterface, LocaleAwareInterface, TranslatorBagInterface {
+        $translator = new class() implements TranslatorInterface, LocaleAwareInterface, TranslatorBagInterface {
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 return strtr((string) $id, $parameters);
@@ -243,14 +243,10 @@ class DiscussionAdminControllerTest extends TestCase
             }
         };
 
-        $controller = new class(
-            $this->manager,
-            $this->comments,
-            $this->reactions,
-            $translator,
-        ) extends DiscussionAdminController {
+        $controller = new class($this->manager, $this->comments, $this->reactions, $translator) extends DiscussionAdminController {
             /** @var array<string, mixed> */
             public array $renderedParameters = [];
+
             public string $renderedView = '';
 
             public function __construct(
@@ -299,15 +295,7 @@ class DiscussionAdminControllerTest extends TestCase
 
     private function controller(bool $csrfValid): DiscussionAdminController
     {
-        return new class(
-            $this->manager,
-            $this->comments,
-            $this->reactions,
-            $this->translator,
-            $this->urlGenerator,
-            $this->requestStack,
-            $csrfValid,
-        ) extends DiscussionAdminController {
+        return new class($this->manager, $this->comments, $this->reactions, $this->translator, $this->urlGenerator, $this->requestStack, $csrfValid) extends DiscussionAdminController {
             public function __construct(
                 DiscussionManager $manager,
                 DiscussionCommentRepository $comments,

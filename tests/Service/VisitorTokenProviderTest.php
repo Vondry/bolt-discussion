@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bolt\Discussion\Tests\Service;
 
-use Bolt\Entity\User;
 use Bolt\Discussion\Service\VisitorTokenProvider;
+use Bolt\Entity\User;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;

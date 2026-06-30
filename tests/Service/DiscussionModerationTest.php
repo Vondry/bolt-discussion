@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bolt\Discussion\Tests\Service;
 
-use Bolt\Utils\ThumbnailHelper;
 use Bolt\Discussion\Entity\DiscussionComment;
 use Bolt\Discussion\Enum\CommentStatus;
 use Bolt\Discussion\Repository\DiscussionCommentRepository;
@@ -13,6 +12,7 @@ use Bolt\Discussion\Service\DiscussionConfig;
 use Bolt\Discussion\Service\DiscussionManager;
 use Bolt\Discussion\Service\SpamChecker;
 use Bolt\Discussion\Service\VisitorTokenProvider;
+use Bolt\Utils\ThumbnailHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;

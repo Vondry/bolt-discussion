@@ -26,3 +26,9 @@ max_length: 2000
 require_name: true
 spam_regex: ''          # if set, bodies matching this regex are marked as spam
 rate_limit_seconds: 10  # min seconds between two anonymous posts from one IP; 0 disables
+
+# Anti-abuse for reactions. Because anonymous reactions are de-duplicated by a
+# client-supplied token, the per-IP cap below is what actually prevents a script
+# from inflating reaction counts by cycling tokens. Logged-in users are exempt.
+reaction_rate_limit: 20          # max new reactions per IP per window; 0 disables
+reaction_rate_limit_seconds: 60  # length of that window, in seconds

@@ -235,12 +235,12 @@ class DiscussionExtensionTest extends TestCase
             ->method('getPage')
             ->with($expectedReference, null, null, false)
             ->willReturn([
-            'comments' => [],
-            'lastId' => 0,
-            'hasMore' => false,
-            'nextBefore' => null,
-            'serverTime' => '2026-06-23T10:00:00+00:00',
-        ]);
+                'comments' => [],
+                'lastId' => 0,
+                'hasMore' => false,
+                'nextBefore' => null,
+                'serverTime' => '2026-06-23T10:00:00+00:00',
+            ]);
 
         $visitor = $this->createMock(VisitorTokenProvider::class);
         $visitor->method('isModerator')->willReturn(false);
@@ -294,8 +294,9 @@ class DiscussionExtensionTest extends TestCase
             /** @var list<string> */
             public array $transKeys = [];
 
-            public function __construct(private string $locale)
-            {
+            public function __construct(
+                private string $locale
+            ) {
             }
 
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string

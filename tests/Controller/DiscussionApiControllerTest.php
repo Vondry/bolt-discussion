@@ -73,7 +73,7 @@ class DiscussionApiControllerTest extends TestCase
                 'comments' => [],
                 'lastId' => 12,
                 'serverTime' => '2026-06-23T10:00:00+00:00',
-        ]);
+            ]);
         $this->manager->expects(self::once())
             ->method('getPollUpdates')
             ->with('demo', [3, 7], false)

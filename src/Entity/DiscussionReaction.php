@@ -30,6 +30,10 @@ class DiscussionReaction
     #[ORM\Column(name: 'visitor_token', type: Types::STRING, length: 64)]
     private string $visitorToken;
 
+    /** Hashed IP of the visitor, for per-IP rate-limiting. Never exposed. */
+    #[ORM\Column(name: 'ip_hash', type: Types::STRING, length: 64, nullable: true)]
+    private ?string $ipHash = null;
+
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private DateTimeImmutable $createdAt;
 
@@ -75,6 +79,18 @@ class DiscussionReaction
     public function setVisitorToken(string $visitorToken): self
     {
         $this->visitorToken = $visitorToken;
+
+        return $this;
+    }
+
+    public function getIpHash(): ?string
+    {
+        return $this->ipHash;
+    }
+
+    public function setIpHash(?string $ipHash): self
+    {
+        $this->ipHash = $ipHash;
 
         return $this;
     }

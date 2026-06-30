@@ -256,7 +256,7 @@ class DiscussionManager
      *
      * @return array{commentId: int, emoji: string, count: int, mine: bool}
      */
-    public function toggleReaction(DiscussionComment $comment, string $emoji): array
+    public function toggleReaction(DiscussionComment $comment, string $emoji, Request $request): array
     {
         if (! $this->config->reactionsEnabled()) {
             throw new ValidationException('Reactions are disabled.');
@@ -272,10 +272,19 @@ class DiscussionManager
             $this->em->remove($existing);
             $mine = false;
         } else {
+            $ipHash = $this->hashIp($request->getClientIp());
+
+            // Only anonymous additions can inflate counts (logged-in users are
+            // capped at one reaction per emoji per comment), so throttle those.
+            if (! $this->visitor->isLoggedIn() && $this->spamChecker->isReactionFlooding($ipHash)) {
+                throw new ValidationException('You are reacting too quickly. Please slow down and try again.');
+            }
+
             $reaction = (new DiscussionReaction())
                 ->setComment($comment)
                 ->setEmoji($emoji)
-                ->setVisitorToken($token);
+                ->setVisitorToken($token)
+                ->setIpHash($ipHash);
             $this->em->persist($reaction);
             $mine = true;
         }

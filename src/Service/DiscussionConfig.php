@@ -101,6 +101,16 @@ class DiscussionConfig
         return (int) $this->get('rate_limit_seconds', 10);
     }
 
+    public function reactionRateLimit(): int
+    {
+        return (int) $this->get('reaction_rate_limit', 20);
+    }
+
+    public function reactionRateLimitSeconds(): int
+    {
+        return (int) $this->get('reaction_rate_limit_seconds', 60);
+    }
+
     private function get(string $key, mixed $default): mixed
     {
         if ($this->config === null) {

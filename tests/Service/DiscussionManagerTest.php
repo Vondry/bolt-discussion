@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bolt\Discussion\Tests\Service;
 
-use Bolt\Entity\User;
-use Bolt\Utils\ThumbnailHelper;
 use Bolt\Discussion\Entity\DiscussionComment;
 use Bolt\Discussion\Entity\DiscussionReaction;
 use Bolt\Discussion\Enum\CommentStatus;
@@ -16,6 +14,8 @@ use Bolt\Discussion\Service\DiscussionConfig;
 use Bolt\Discussion\Service\DiscussionManager;
 use Bolt\Discussion\Service\SpamChecker;
 use Bolt\Discussion\Service\VisitorTokenProvider;
+use Bolt\Entity\User;
+use Bolt\Utils\ThumbnailHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -266,11 +266,16 @@ class DiscussionManagerTest extends TestCase
     {
         $comment = (new DiscussionComment())->setReference('demo');
         $this->visitor->method('getToken')->willReturn('visitor-1');
+        $this->visitor->method('isLoggedIn')->willReturn(false);
+        $this->spamChecker->method('isReactionFlooding')->willReturn(false);
         $this->reactions->method('findOneFor')->willReturn(null);
         $this->reactions->method('summaryFor')->willReturn([0 => ['👍' => ['count' => 1, 'mine' => true]]]);
-        $this->em->expects(self::once())->method('persist')->with(self::isInstanceOf(DiscussionReaction::class));
+        $expectedIpHash = hash_hmac('sha256', 'bolt-discussion|203.0.113.5', 'test-ip-hash-key');
+        $this->em->expects(self::once())->method('persist')->with(
+            self::callback(static fn (DiscussionReaction $r): bool => $r->getIpHash() === $expectedIpHash)
+        );
 
-        $result = $this->manager->toggleReaction($comment, '👍');
+        $result = $this->manager->toggleReaction($comment, '👍', $this->request());
 
         self::assertTrue($result['mine']);
         self::assertSame(1, $result['count']);
@@ -285,7 +290,7 @@ class DiscussionManagerTest extends TestCase
         $this->reactions->method('summaryFor')->willReturn([0 => []]);
         $this->em->expects(self::once())->method('remove')->with($existing);
 
-        $result = $this->manager->toggleReaction($comment, '👍');
+        $result = $this->manager->toggleReaction($comment, '👍', $this->request());
 
         self::assertFalse($result['mine']);
         self::assertSame(0, $result['count']);
@@ -296,7 +301,53 @@ class DiscussionManagerTest extends TestCase
         $comment = (new DiscussionComment())->setReference('demo');
 
         $this->expectException(ValidationException::class);
-        $this->manager->toggleReaction($comment, '🚀');
+        $this->manager->toggleReaction($comment, '🚀', $this->request());
+    }
+
+    public function testAnonymousReactionAdditionIsRejectedWhenFlooding(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo');
+        $this->visitor->method('getToken')->willReturn('anon:abc');
+        $this->visitor->method('isLoggedIn')->willReturn(false);
+        $this->reactions->method('findOneFor')->willReturn(null);
+        $this->spamChecker->method('isReactionFlooding')->willReturn(true);
+        // A throttled addition must never reach the database.
+        $this->em->expects(self::never())->method('persist');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('too quickly');
+        $this->manager->toggleReaction($comment, '👍', $this->request());
+    }
+
+    public function testLoggedInReactionAdditionSkipsFloodCheck(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo');
+        $this->visitor->method('getToken')->willReturn('user:1');
+        $this->visitor->method('isLoggedIn')->willReturn(true);
+        $this->reactions->method('findOneFor')->willReturn(null);
+        $this->reactions->method('summaryFor')->willReturn([0 => ['👍' => ['count' => 1, 'mine' => true]]]);
+        // Logged-in users cannot inflate counts, so the cap is never consulted.
+        $this->spamChecker->expects(self::never())->method('isReactionFlooding');
+        $this->em->expects(self::once())->method('persist');
+
+        $result = $this->manager->toggleReaction($comment, '👍', $this->request());
+
+        self::assertTrue($result['mine']);
+    }
+
+    public function testReactionRemovalIsNeverFloodChecked(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo');
+        $existing = (new DiscussionReaction())->setComment($comment)->setEmoji('👍')->setVisitorToken('anon:abc');
+        $this->visitor->method('getToken')->willReturn('anon:abc');
+        $this->reactions->method('findOneFor')->willReturn($existing);
+        $this->reactions->method('summaryFor')->willReturn([0 => []]);
+        // Removing your own reaction creates no row, so it is never throttled.
+        $this->spamChecker->expects(self::never())->method('isReactionFlooding');
+
+        $result = $this->manager->toggleReaction($comment, '👍', $this->request());
+
+        self::assertFalse($result['mine']);
     }
 
     public function testGetPagePaginatesRootsAndIncludesReplies(): void
@@ -421,7 +472,7 @@ class DiscussionManagerTest extends TestCase
         $user->method('getId')->willReturn(7);
         $user->method('getDisplayName')->willReturn('Admin');
         $user->method('getAvatar')->willReturn('avatars/user-7.jpg');
-        
+
         $this->visitor->method('getUser')->willReturn($user);
         $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
         $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
@@ -444,11 +495,11 @@ class DiscussionManagerTest extends TestCase
         $user->method('getId')->willReturn(7);
         $user->method('getDisplayName')->willReturn('Admin');
         $user->method('getAvatar')->willReturn(null);
-        
+
         $this->visitor->method('getUser')->willReturn($user);
         $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
         $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
-        
+
         $this->thumbnails->expects(self::never())->method('path');
 
         $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
@@ -482,7 +533,7 @@ class DiscussionManagerTest extends TestCase
         $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
         $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
         $this->spamChecker->method('isRateLimited')->willReturn(false);
-        
+
         $this->thumbnails->expects(self::never())->method('path');
 
         $result = $this->manager->createComment('demo', ['body' => 'Hello', 'authorName' => 'Jo'], $this->request());

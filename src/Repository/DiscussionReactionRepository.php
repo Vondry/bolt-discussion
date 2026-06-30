@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bolt\Discussion\Repository;
 
 use Bolt\Discussion\Entity\DiscussionReaction;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -36,6 +37,22 @@ class DiscussionReactionRepository extends ServiceEntityRepository
             ->setParameter('ids', $commentIds)
             ->getQuery()
             ->execute();
+    }
+
+    /**
+     * How many reactions this hashed IP has added since the given time. Used to
+     * cap anonymous reaction additions and so prevent count inflation.
+     */
+    public function countRecentFromIp(string $ipHash, DateTimeImmutable $since): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.ipHash = :ipHash')
+            ->andWhere('r.createdAt >= :since')
+            ->setParameter('ipHash', $ipHash)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     public function findOneFor(int $commentId, string $emoji, string $visitorToken): ?DiscussionReaction
