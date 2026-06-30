@@ -55,29 +55,10 @@ A pluggable, themeable discussion / comments module for **Bolt CMS 6**.
 
 ## Upgrading
 
-This is a Bolt extension, not an application, so it ships no migrations of its
-own — your project owns its schema. After updating the package, re-run the diff
-so any entity changes are migrated into your database:
-
-```bash
-composer update tomvondracek/bolt-discussion
-cd vendor/tomvondracek/bolt-discussion && npm install && npm run build && cd -
-bin/console doctrine:migrations:diff        # picks up any entity/schema changes
-bin/console doctrine:migrations:migrate
-bin/console cache:clear
-```
-
-Notable schema changes:
-
-- **Reaction rate-limiting** added a nullable `ip_hash` column to
-  `bolt_discussion_reaction`. The migration only adds the column (no backfill,
-  no downtime), but it **must run before** the new code serves traffic, since
-  adding a reaction now writes that column. Existing rows are unaffected.
-
-New config keys (`reaction_rate_limit`, `reaction_rate_limit_seconds`) have
-built-in defaults, so existing `config/extensions/bolt-discussion.yaml` files
-keep working unchanged — add them only to tune or disable the cap. See
-[Configuration](#configuration).
+When updating to a new version, re-run `doctrine:migrations:diff` / `migrate`
+in your project so any entity changes are migrated into your database. See
+[`CHANGELOG.md`](CHANGELOG.md) for per-version upgrade notes (e.g. the `ip_hash`
+column added in 2.0.0).
 
 ## Usage
 
