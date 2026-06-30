@@ -20,6 +20,7 @@
 
 # Walidacja / błędy API
 'Invalid discussion reference.': 'Nieprawidłowa referencja dyskusji.'
+'Invalid comment request.': 'Nieprawidłowe żądanie komentarza.'
 'Comment cannot be empty.': 'Komentarz nie może być pusty.'
 'Comment is too long (max %max% characters).': 'Komentarz jest za długi (maks. %max% znaków).'
 'Please provide your name.': 'Podaj swoje imię.'

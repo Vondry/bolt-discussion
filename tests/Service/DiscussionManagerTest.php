@@ -115,6 +115,52 @@ class DiscussionManagerTest extends TestCase
         $this->manager->createComment(str_repeat('a', 192), ['body' => 'Hello', 'authorName' => 'Jo'], $this->request());
     }
 
+    public function testMalformedHoneypotFieldIsRejectedBeforePersistence(): void
+    {
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->em->expects(self::never())->method('persist');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Invalid comment request.');
+        $this->manager->createComment('demo', [
+            'body' => 'Hello',
+            'authorName' => 'Jo',
+            'website' => ['https://spam.example'],
+        ], $this->request());
+    }
+
+    public function testMalformedParentIdIsRejectedBeforePersistence(): void
+    {
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->comments->expects(self::never())->method('find');
+        $this->em->expects(self::never())->method('persist');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Invalid comment request.');
+        $this->manager->createComment('demo', [
+            'body' => 'Hello',
+            'authorName' => 'Jo',
+            'parentId' => ['1'],
+        ], $this->request());
+    }
+
+    public function testNonNumericParentIdIsRejectedBeforeLookup(): void
+    {
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->comments->expects(self::never())->method('find');
+        $this->em->expects(self::never())->method('persist');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('replying to no longer exists');
+        $this->manager->createComment('demo', [
+            'body' => 'Hello',
+            'authorName' => 'Jo',
+            'parentId' => 'abc',
+        ], $this->request());
+    }
+
     public function testAnonymousAutoModerationPublishesImmediately(): void
     {
         $this->visitor->method('getUser')->willReturn(null);
@@ -132,6 +178,41 @@ class DiscussionManagerTest extends TestCase
         self::assertSame('published', $result['status']);
         self::assertNotNull($result['comment']);
         self::assertSame('Jo', $result['comment']['author']);
+    }
+
+    public function testAnonymousWithoutRequiredNameUsesFallbackName(): void
+    {
+        $config = $this->createMock(DiscussionConfig::class);
+        $config->method('maxLength')->willReturn(2000);
+        $config->method('requireName')->willReturn(false);
+        $config->method('isQueueModeration')->willReturn(false);
+        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, $this->thumbnails, 'test-ip-hash-key');
+
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        $this->spamChecker->method('isRateLimited')->willReturn(false);
+
+        $result = $manager->createComment('demo', ['body' => 'Hello', 'authorName' => ''], $this->request());
+
+        self::assertSame('Anonymous', $result['comment']['author']);
+    }
+
+    public function testCreateCommentAcceptsBooleanScalarInputAndMissingClientIp(): void
+    {
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        $this->spamChecker->method('isRateLimited')->with(null)->willReturn(false);
+        $this->em->expects(self::once())->method('persist')->with(
+            self::callback(static fn (DiscussionComment $comment): bool => $comment->getBody() === '1' && $comment->getIpHash() === null)
+        );
+
+        $request = Request::create('/discussion/api/demo', 'POST', server: []);
+        $request->server->remove('REMOTE_ADDR');
+        $result = $this->manager->createComment('demo', ['body' => true, 'authorName' => 'Jo'], $request);
+
+        self::assertSame('published', $result['status']);
     }
 
     public function testAnonymousQueueModerationProducesPending(): void
@@ -240,6 +321,63 @@ class DiscussionManagerTest extends TestCase
         self::assertSame('published', $result['status']);
     }
 
+    public function testReplyWithBlankParentIdIsTreatedAsRootComment(): void
+    {
+        $this->comments->expects(self::never())->method('find');
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        $this->spamChecker->method('isRateLimited')->willReturn(false);
+
+        $result = $this->manager->createComment('demo', ['body' => 'A root', 'authorName' => 'Jo', 'parentId' => ' 0 '], $this->request());
+
+        self::assertSame('published', $result['status']);
+    }
+
+    public function testNegativeParentIdIsTreatedAsRootComment(): void
+    {
+        $this->comments->expects(self::never())->method('find');
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+        $this->spamChecker->method('matchesSpamRegex')->willReturn(false);
+        $this->spamChecker->method('isRateLimited')->willReturn(false);
+
+        $result = $this->manager->createComment('demo', ['body' => 'A root', 'authorName' => 'Jo', 'parentId' => -1], $this->request());
+
+        self::assertSame('published', $result['status']);
+    }
+
+    public function testReplyIsRejectedWhenRepliesAreDisabled(): void
+    {
+        $root = (new DiscussionComment())->setReference('demo')->setStatus(CommentStatus::Published);
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+
+        $config = $this->createMock(DiscussionConfig::class);
+        $config->method('maxLength')->willReturn(2000);
+        $config->method('requireName')->willReturn(true);
+        $config->method('repliesEnabled')->willReturn(false);
+        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, $this->thumbnails, 'test-ip-hash-key');
+
+        $this->comments->expects(self::never())->method('find')->with($root);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Replies are disabled.');
+        $manager->createComment('demo', ['body' => 'A reply', 'authorName' => 'Jo', 'parentId' => 1], $this->request());
+    }
+
+    public function testReplyToPendingCommentIsRejected(): void
+    {
+        $root = (new DiscussionComment())->setReference('demo')->setStatus(CommentStatus::Pending);
+        $this->comments->method('find')->with(1)->willReturn($root);
+        $this->visitor->method('getUser')->willReturn(null);
+        $this->spamChecker->method('isHoneypotTripped')->willReturn(false);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('You cannot reply');
+        $this->manager->createComment('demo', ['body' => 'A reply', 'authorName' => 'Jo', 'parentId' => 1], $this->request());
+    }
+
     public function testNestedReplyIsRejected(): void
     {
         $root = (new DiscussionComment())->setReference('demo')->setStatus(CommentStatus::Published);
@@ -320,12 +458,45 @@ class DiscussionManagerTest extends TestCase
         self::assertSame(3, $result['count'], 'The winning insert is reflected as +1 over the snapshot.');
     }
 
+    public function testConcurrentDuplicateAdditionDoesNotDoubleCountWhenSnapshotAlreadySawWinner(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo');
+        $this->visitor->method('getToken')->willReturn('anon:abc');
+        $this->visitor->method('isLoggedIn')->willReturn(false);
+        $this->spamChecker->method('isReactionFlooding')->willReturn(false);
+        $this->reactions->method('findOneFor')->willReturn(null);
+        $this->reactions->method('summaryFor')->willReturn([0 => ['👍' => ['count' => 3, 'mine' => true]]]);
+
+        // The duplicate row was inserted before our aggregate snapshot, so the
+        // returned count must not add it a second time.
+        $driverException = $this->createMock(\Doctrine\DBAL\Driver\Exception::class);
+        $this->em->method('flush')->willThrowException(
+            new \Doctrine\DBAL\Exception\UniqueConstraintViolationException($driverException, null)
+        );
+
+        $result = $this->manager->toggleReaction($comment, '👍', $this->request());
+
+        self::assertTrue($result['mine']);
+        self::assertSame(3, $result['count']);
+    }
+
     public function testDisallowedReactionEmojiIsRejected(): void
     {
         $comment = (new DiscussionComment())->setReference('demo');
 
         $this->expectException(ValidationException::class);
         $this->manager->toggleReaction($comment, '🚀', $this->request());
+    }
+
+    public function testReactionIsRejectedWhenDisabled(): void
+    {
+        $config = $this->createMock(DiscussionConfig::class);
+        $config->method('reactionsEnabled')->willReturn(false);
+        $manager = new DiscussionManager($this->em, $this->comments, $this->reactions, $config, $this->spamChecker, $this->visitor, $this->thumbnails, 'test-ip-hash-key');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Reactions are disabled.');
+        $manager->toggleReaction((new DiscussionComment())->setReference('demo'), '👍', $this->request());
     }
 
     public function testAnonymousReactionAdditionIsRejectedWhenFlooding(): void
@@ -427,6 +598,27 @@ class DiscussionManagerTest extends TestCase
 
         self::assertSame([], $thread['comments']);
         self::assertSame(0, $thread['lastId']);
+    }
+
+    public function testGetThreadSerializesReturnedCommentsAndAdvancesLastId(): void
+    {
+        $first = $this->comment(2);
+        $second = $this->comment(5);
+        $this->comments->expects(self::once())
+            ->method('findThread')
+            ->with('demo', 1, true, 100)
+            ->willReturn([$first, $second]);
+        $this->visitor->method('getToken')->willReturn('anon:abc');
+        $this->reactions->expects(self::once())
+            ->method('summaryFor')
+            ->with([2, 5], 'anon:abc')
+            ->willReturn([5 => ['👍' => ['count' => 2, 'mine' => true]]]);
+
+        $thread = $this->manager->getThread('demo', 1, true);
+
+        self::assertSame(5, $thread['lastId']);
+        self::assertSame([2, 5], array_column($thread['comments'], 'id'));
+        self::assertSame([['emoji' => '👍', 'count' => 2, 'mine' => true]], $thread['comments'][1]['reactions']);
     }
 
     public function testPollUpdatesIncludeRemovedCommentsAndCompleteReactionSnapshots(): void

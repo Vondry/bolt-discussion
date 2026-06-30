@@ -8,6 +8,9 @@ use Bolt\Configuration\Config;
 use Bolt\Discussion\Extension;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 /**
  * Guards the config-filename contract so a single, correctly named config file
@@ -46,6 +49,60 @@ class ExtensionTest extends TestCase
 
         self::assertSame('bolt-discussion.yaml', basename($filenames['main']));
         self::assertSame('bolt-discussion_local.yaml', basename($filenames['local']));
+    }
+
+    public function testExtensionNameAndInitializationRegisterTwigNamespace(): void
+    {
+        $loader = new FilesystemLoader();
+        $twig = new Environment($loader);
+        $extension = new Extension();
+        $reflection = new ReflectionClass($extension);
+        $containerProperty = $reflection->getProperty('container');
+        $containerProperty->setValue($extension, new class($twig) implements ContainerInterface {
+            public function __construct(private readonly Environment $twig)
+            {
+            }
+
+            public function set(string $id, ?object $service): void
+            {
+            }
+
+            public function get(string $id, int $invalidBehavior = self::EXCEPTION_ON_INVALID_REFERENCE): ?object
+            {
+                return $id === 'twig' ? $this->twig : null;
+            }
+
+            public function has(string $id): bool
+            {
+                return $id === 'twig';
+            }
+
+            public function initialized(string $id): bool
+            {
+                return $this->has($id);
+            }
+
+            public function getParameter(string $name): array|bool|string|int|float|\UnitEnum|null
+            {
+                return null;
+            }
+
+            public function hasParameter(string $name): bool
+            {
+                return false;
+            }
+
+            public function setParameter(string $name, array|bool|string|int|float|\UnitEnum|null $value): void
+            {
+            }
+        });
+
+        self::assertSame('Bolt Discussion', $extension->getName());
+
+        $extension->initialize();
+        $extension->initializeCli();
+
+        self::assertContains(\dirname(__DIR__) . '/templates', $loader->getPaths('bolt-discussion'));
     }
 
     public function testInstallCommandDerivesTheSameFilenameFromTheNamespace(): void

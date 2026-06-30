@@ -20,6 +20,7 @@
 
 # Validace / chyby API
 'Invalid discussion reference.': 'Neplatná reference diskuze.'
+'Invalid comment request.': 'Neplatný požadavek na komentář.'
 'Comment cannot be empty.': 'Komentář nemůže být prázdný.'
 'Comment is too long (max %max% characters).': 'Komentář je příliš dlouhý (max %max% znaků).'
 'Please provide your name.': 'Zadejte prosím své jméno.'

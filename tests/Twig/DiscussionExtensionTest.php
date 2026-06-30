@@ -25,6 +25,24 @@ use Twig\TwigFilter;
 
 class DiscussionExtensionTest extends TestCase
 {
+    public function testTwigFunctionsAreRegistered(): void
+    {
+        $extension = new DiscussionExtension(
+            $this->createMock(DiscussionConfig::class),
+            $this->createMock(DiscussionManager::class),
+            $this->createMock(VisitorTokenProvider::class),
+            $this->createMock(DiscussionCommentRepository::class),
+            $this->createMock(UrlGeneratorInterface::class),
+            $this->createMock(CsrfTokenManagerInterface::class),
+            $this->createMock(TranslatorInterface::class),
+        );
+
+        $functions = $extension->getFunctions();
+
+        self::assertSame('discussion', $functions[0]->getName());
+        self::assertSame('discussion_count', $functions[1]->getName());
+    }
+
     public function testInitialPageIsRenderedAndSafelyEmbeddedForHydration(): void
     {
         $config = $this->createMock(DiscussionConfig::class);
@@ -144,6 +162,99 @@ class DiscussionExtensionTest extends TestCase
         );
 
         self::assertSame(12, $extension->count(new Markup('rockfest-2027-lineup', 'UTF-8')));
+    }
+
+    public function testRenderingWithoutTranslatorCatalogueUsesFallbackReplyLabelsAndInitials(): void
+    {
+        $config = $this->createMock(DiscussionConfig::class);
+        $config->method('pollInterval')->willReturn(10000);
+        $config->method('reactionsEnabled')->willReturn(false);
+        $config->method('reactions')->willReturn([]);
+        $config->method('repliesEnabled')->willReturn(true);
+        $config->method('requireName')->willReturn(false);
+        $config->method('maxLength')->willReturn(2000);
+
+        $manager = $this->createMock(DiscussionManager::class);
+        $manager->expects(self::once())
+            ->method('getPage')
+            ->with('article-1', null, null, false)
+            ->willReturn([
+                'comments' => [
+                    [
+                        'id' => 1,
+                        'parentId' => null,
+                        'author' => '',
+                        'authenticated' => false,
+                        'body' => 'Root',
+                        'status' => 'published',
+                        'createdAt' => '2026-06-23T10:00:00+00:00',
+                        'reactions' => [],
+                    ],
+                    [
+                        'id' => 2,
+                        'parentId' => 1,
+                        'author' => 'Solo',
+                        'authenticated' => false,
+                        'body' => 'Reply',
+                        'status' => 'published',
+                        'createdAt' => '2026-06-23T10:05:00+00:00',
+                        'reactions' => [],
+                    ],
+                ],
+                'lastId' => 2,
+                'hasMore' => false,
+                'nextBefore' => 1,
+                'serverTime' => '2026-06-23T10:06:00+00:00',
+            ]);
+
+        $visitor = $this->createMock(VisitorTokenProvider::class);
+        $visitor->method('isModerator')->willReturn(false);
+
+        $router = $this->createMock(UrlGeneratorInterface::class);
+        $router->method('generate')->willReturnCallback(
+            static fn (string $route, array $parameters = []): string => match ($route) {
+                'bolt_discussion_api_csrf_token' => '/discussion/api/csrf/token',
+                'bolt_discussion_api_list' => '/discussion/api/' . $parameters['reference'],
+                'bolt_discussion_api_reaction' => '/discussion/api/comment/0/reaction',
+                'bolt_discussion_api_delete' => '/discussion/api/comment/0',
+                default => '/',
+            }
+        );
+
+        $csrf = $this->createMock(CsrfTokenManagerInterface::class);
+        $csrf->method('getToken')->willReturn(new CsrfToken('bolt_discussion', 'csrf-value'));
+
+        $translator = new class() implements TranslatorInterface {
+            public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                return strtr((string) $id, $parameters);
+            }
+
+            public function getLocale(): string
+            {
+                return 'en';
+            }
+        };
+
+        $loader = new FilesystemLoader();
+        $loader->addPath(\dirname(__DIR__, 2) . '/templates', 'bolt-discussion');
+        $twig = new Environment($loader);
+        $twig->addFilter(new TwigFilter('trans', static fn (string $message): string => $message));
+
+        $html = (new DiscussionExtension(
+            $config,
+            $manager,
+            $visitor,
+            $this->createMock(DiscussionCommentRepository::class),
+            $router,
+            $csrf,
+            $translator,
+        ))->render($twig, 'article-1');
+
+        self::assertStringContainsString('1 replies', $html);
+        self::assertMatchesRegularExpression('/>\s*\?\s*<\/span>/', $html);
+        self::assertMatchesRegularExpression('/>\s*SO\s*<\/span>/', $html);
+        self::assertStringContainsString('Reply', $html);
     }
 
     public function testComposerTextCanBeOverriddenPerInstance(): void

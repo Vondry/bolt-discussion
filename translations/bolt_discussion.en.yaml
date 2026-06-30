@@ -22,6 +22,7 @@
 
 # Validation / API errors
 'Invalid discussion reference.': 'Invalid discussion reference.'
+'Invalid comment request.': 'Invalid comment request.'
 'Comment cannot be empty.': 'Comment cannot be empty.'
 'Comment is too long (max %max% characters).': 'Comment is too long (max %max% characters).'
 'Please provide your name.': 'Please provide your name.'

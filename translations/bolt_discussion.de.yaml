@@ -20,6 +20,7 @@
 
 # Validierung / API-Fehler
 'Invalid discussion reference.': 'Ungültige Diskussionsreferenz.'
+'Invalid comment request.': 'Ungültige Kommentaranfrage.'
 'Comment cannot be empty.': 'Der Kommentar darf nicht leer sein.'
 'Comment is too long (max %max% characters).': 'Der Kommentar ist zu lang (max. %max% Zeichen).'
 'Please provide your name.': 'Bitte gib deinen Namen an.'

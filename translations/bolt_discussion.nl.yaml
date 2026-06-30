@@ -20,6 +20,7 @@
 
 # Validatie / API-fouten
 'Invalid discussion reference.': 'Ongeldige discussiereferentie.'
+'Invalid comment request.': 'Ongeldig reactieverzoek.'
 'Comment cannot be empty.': 'Reactie mag niet leeg zijn.'
 'Comment is too long (max %max% characters).': 'Reactie is te lang (max. %max% tekens).'
 'Please provide your name.': 'Vul je naam in.'

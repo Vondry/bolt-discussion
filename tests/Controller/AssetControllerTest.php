@@ -25,6 +25,52 @@ class AssetControllerTest extends TestCase
         (new AssetController())->serve('discussion.js.LICENSE.txt');
     }
 
+    public function testRejectsWhenBuildDirectoryIsMissing(): void
+    {
+        $buildDir = \dirname(__DIR__, 2) . '/public/build';
+        $backup = \dirname(__DIR__, 2) . '/public/build-coverage-backup-' . bin2hex(random_bytes(4));
+
+        if (! @rename($buildDir, $backup)) {
+            self::markTestSkipped('Build directory cannot be moved on this platform.');
+        }
+
+        try {
+            $this->expectException(NotFoundHttpException::class);
+            (new AssetController())->serve('discussion.js');
+        } finally {
+            @rename($backup, $buildDir);
+        }
+    }
+
+    public function testRejectsAllowedAssetNameThatResolvesOutsideBuildDirectory(): void
+    {
+        $buildDir = \dirname(__DIR__, 2) . '/public/build';
+        $asset = $buildDir . '/discussion.css';
+        $backup = $buildDir . '/discussion.css.coverage-backup-' . bin2hex(random_bytes(4));
+        $target = sys_get_temp_dir() . '/bolt-discussion-secret-' . bin2hex(random_bytes(6)) . '.css';
+        file_put_contents($target, 'secret');
+
+        if (! @rename($asset, $backup)) {
+            @unlink($target);
+            self::markTestSkipped('Asset file cannot be moved on this platform.');
+        }
+
+        if (! @symlink($target, $asset)) {
+            @rename($backup, $asset);
+            @unlink($target);
+            self::markTestSkipped('Symlinks are not available on this platform.');
+        }
+
+        try {
+            $this->expectException(NotFoundHttpException::class);
+            (new AssetController())->serve('discussion.css');
+        } finally {
+            @unlink($asset);
+            @rename($backup, $asset);
+            @unlink($target);
+        }
+    }
+
     public function testRejectsSymlinkThatResolvesOutsideBuildDirectory(): void
     {
         $buildDir = \dirname(__DIR__, 2) . '/public/build';

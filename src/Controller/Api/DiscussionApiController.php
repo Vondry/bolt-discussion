@@ -10,6 +10,7 @@ use Bolt\Discussion\Exception\ValidationException;
 use Bolt\Discussion\Service\DiscussionManager;
 use Bolt\Discussion\Service\VisitorTokenProvider;
 use Bolt\Extension\ExtensionController;
+use Stringable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -86,7 +87,7 @@ class DiscussionApiController extends ExtensionController
     {
         $input = $this->input($request);
 
-        if (! $this->isCsrfTokenValid(self::CSRF_ID, (string) ($input['_token'] ?? ''))) {
+        if (! $this->isCsrfTokenValid(self::CSRF_ID, $this->stringInput($input['_token'] ?? null))) {
             return $this->invalidCsrf('Invalid security token. Please reload the page.');
         }
 
@@ -122,12 +123,12 @@ class DiscussionApiController extends ExtensionController
         }
 
         $input = $this->input($request);
-        if (! $this->isCsrfTokenValid(self::CSRF_ID, (string) ($input['_token'] ?? ''))) {
+        if (! $this->isCsrfTokenValid(self::CSRF_ID, $this->stringInput($input['_token'] ?? null))) {
             return $this->invalidCsrf('Invalid security token.');
         }
 
         try {
-            $result = $this->manager->toggleReaction($comment, (string) ($input['emoji'] ?? ''), $request);
+            $result = $this->manager->toggleReaction($comment, $this->stringInput($input['emoji'] ?? null), $request);
         } catch (ValidationException $e) {
             return $this->finish(new JsonResponse(['error' => $this->t($e->getMessage(), $e->getParameters())], Response::HTTP_UNPROCESSABLE_ENTITY));
         }
@@ -165,6 +166,23 @@ class DiscussionApiController extends ExtensionController
         }
 
         return $request->request->all();
+    }
+
+    private function stringInput(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '';
+        }
+
+        if (is_scalar($value) || $value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        return '';
     }
 
     /**

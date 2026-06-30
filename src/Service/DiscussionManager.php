@@ -15,6 +15,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
+use Stringable;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -41,7 +42,7 @@ class DiscussionManager
     }
 
     /**
-     * @param array{body?: string, authorName?: string, parentId?: int|string|null, website?: string} $input
+     * @param array<string, mixed> $input
      * @return array{status: string, comment: array<string, mixed>|null}
      */
     public function createComment(string $reference, array $input, Request $request): array
@@ -50,7 +51,7 @@ class DiscussionManager
             throw new ValidationException('Invalid discussion reference.');
         }
 
-        $body = trim((string) ($input['body'] ?? ''));
+        $body = trim($this->optionalString($input['body'] ?? null));
         if ($body === '') {
             throw new ValidationException('Comment cannot be empty.');
         }
@@ -59,7 +60,7 @@ class DiscussionManager
         }
 
         $user = $this->visitor->getUser();
-        $authorName = trim((string) ($input['authorName'] ?? ''));
+        $authorName = trim($this->optionalString($input['authorName'] ?? null));
         if ($user !== null) {
             $authorName = $authorName !== '' ? $authorName : ($user->getDisplayName() ?: $user->getUserIdentifier());
         } elseif ($authorName === '' && $this->config->requireName()) {
@@ -71,7 +72,7 @@ class DiscussionManager
         // A filled honeypot is an almost-certain bot. Drop it without writing to
         // the database (so it can't be used to flood storage) and without tipping
         // the bot off — return a plausible "published" response with no payload.
-        if ($this->spamChecker->isHoneypotTripped($input['website'] ?? null)) {
+        if ($this->spamChecker->isHoneypotTripped($this->optionalString($input['website'] ?? null))) {
             return [
                 'status' => CommentStatus::Published->value,
                 'comment' => null,
@@ -275,7 +276,9 @@ class DiscussionManager
         // write — important because a flush that hits the unique constraint
         // closes the manager (see the concurrent-add handling below).
         $summary = $this->reactions->summaryFor([$commentId], $token);
-        $count = $summary[$commentId][$emoji]['count'] ?? 0;
+        $current = $summary[$commentId][$emoji] ?? ['count' => 0, 'mine' => false];
+        $count = $current['count'];
+        $mineInSnapshot = $current['mine'];
 
         if ($existing !== null) {
             $this->em->remove($existing);
@@ -297,6 +300,7 @@ class DiscussionManager
                 ->setVisitorToken($token)
                 ->setIpHash($ipHash);
 
+            $countAlreadyIncludesMine = false;
             try {
                 $this->em->persist($reaction);
                 $this->em->flush();
@@ -304,9 +308,12 @@ class DiscussionManager
                 // A concurrent request inserted the identical (comment, emoji,
                 // token) row first. The desired end state already holds, so this
                 // is a success, not an error.
+                $countAlreadyIncludesMine = $mineInSnapshot;
             }
 
-            ++$count;
+            if (! $countAlreadyIncludesMine) {
+                ++$count;
+            }
             $mine = true;
         }
 
@@ -318,9 +325,28 @@ class DiscussionManager
         ];
     }
 
-    private function resolveParent(int|string|null $parentId, string $reference): ?DiscussionComment
+    private function resolveParent(mixed $parentId, string $reference): ?DiscussionComment
     {
-        if ($parentId === null || $parentId === '' || (int) $parentId === 0) {
+        if ($parentId === null || $parentId === '') {
+            return null;
+        }
+
+        if (! is_int($parentId) && ! is_string($parentId)) {
+            throw new ValidationException('Invalid comment request.');
+        }
+
+        if (is_string($parentId)) {
+            $parentId = trim($parentId);
+            if ($parentId === '' || $parentId === '0') {
+                return null;
+            }
+            if (! ctype_digit($parentId)) {
+                throw new ValidationException('The comment you are replying to no longer exists.');
+            }
+        }
+
+        $parentId = (int) $parentId;
+        if ($parentId <= 0) {
             return null;
         }
 
@@ -328,7 +354,7 @@ class DiscussionManager
             throw new ValidationException('Replies are disabled.');
         }
 
-        $parent = $this->comments->find((int) $parentId);
+        $parent = $this->comments->find($parentId);
         if ($parent === null || $parent->getReference() !== $reference) {
             throw new ValidationException('The comment you are replying to no longer exists.');
         }
@@ -396,5 +422,22 @@ class DiscussionManager
         }
 
         return hash_hmac('sha256', 'bolt-discussion|' . $ip, $this->ipHashKey);
+    }
+
+    private function optionalString(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '';
+        }
+
+        if (is_scalar($value) || $value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        throw new ValidationException('Invalid comment request.');
     }
 }

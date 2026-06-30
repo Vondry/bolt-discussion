@@ -54,6 +54,19 @@ class VisitorTokenProviderTest extends TestCase
         self::assertSame('anon:' . $hex, $this->provider($request, null)->getToken());
     }
 
+    public function testTokenIsCachedAfterFirstResolution(): void
+    {
+        $first = str_repeat('a1', 16);
+        $second = str_repeat('b2', 16);
+        $request = new Request(cookies: ['bd_visitor' => $first]);
+        $provider = $this->provider($request, null);
+
+        self::assertSame('anon:' . $first, $provider->getToken());
+
+        $request->cookies->set('bd_visitor', $second);
+        self::assertSame('anon:' . $first, $provider->getToken());
+    }
+
     public function testForgedUserCookieCannotImpersonateUserBucket(): void
     {
         // An attacker tries to hijack logged-in user #5's reaction bucket.
@@ -130,5 +143,31 @@ class VisitorTokenProviderTest extends TestCase
         self::assertTrue($cookies[0]->isSecure());
         self::assertTrue($cookies[0]->isHttpOnly());
         self::assertSame('lax', $cookies[0]->getSameSite());
+    }
+
+    public function testIssuedCookieIsNotSecureOnPlainHttpRequests(): void
+    {
+        $provider = $this->provider(Request::create('http://example.test/discussion'), null);
+        $provider->getToken();
+        $response = new Response();
+
+        $provider->applyCookie($response);
+
+        $cookies = $response->headers->getCookies();
+        self::assertCount(1, $cookies);
+        self::assertFalse($cookies[0]->isSecure());
+    }
+
+    public function testLoginHelpersReturnBoltUsersOnly(): void
+    {
+        $user = $this->createMock(User::class);
+
+        $loggedIn = $this->provider(new Request(), $user);
+        self::assertTrue($loggedIn->isLoggedIn());
+        self::assertSame($user, $loggedIn->getUser());
+
+        $anonymous = $this->provider(new Request(), null);
+        self::assertFalse($anonymous->isLoggedIn());
+        self::assertNull($anonymous->getUser());
     }
 }

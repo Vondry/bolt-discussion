@@ -156,6 +156,87 @@ class DiscussionAdminControllerTest extends TestCase
         self::assertSame(['Comment #9 marked as spam.'], $this->session->getFlashBag()->peek('success'));
     }
 
+    public function testUnknownActionIsRejected(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo')->setStatus(CommentStatus::Published);
+        $this->manager->expects(self::never())->method('deleteComment');
+        $this->manager->expects(self::never())->method('setStatus');
+
+        $controller = $this->controller(csrfValid: true);
+        $request = Request::create('/extension/discussion/comment/9/unknown', 'POST', ['_token' => 'good']);
+        $request->setSession($this->session);
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\BadRequestHttpException::class);
+        $controller->action($comment, 'unknown', $request);
+    }
+
+    public function testThreadViewFallsBackWhenTranslatorHasNoCatalogue(): void
+    {
+        $comment = $this->comment(1, 'Root', '2026-06-23 10:00:00');
+        $this->comments->method('findForAdmin')->with('demo')->willReturn([$comment]);
+        $this->reactions->method('summaryFor')->willReturn([]);
+
+        $translator = new class() implements TranslatorInterface {
+            public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+            {
+                return strtr((string) $id, $parameters);
+            }
+
+            public function getLocale(): string
+            {
+                return 'en';
+            }
+        };
+
+        $controller = new class($this->manager, $this->comments, $this->reactions, $translator) extends DiscussionAdminController {
+            /** @var array<string, mixed> */
+            public array $renderedParameters = [];
+
+            protected function render(string $view, array $parameters = [], ?Response $response = null): Response
+            {
+                $this->renderedParameters = $parameters;
+
+                return new Response();
+            }
+        };
+
+        $controller->thread('demo');
+
+        self::assertSame('1 comments', $controller->renderedParameters['commentCountLabel']);
+        self::assertSame([], $controller->renderedParameters['replyCountForms']);
+    }
+
+    public function testIndexRendersDiscussionOverview(): void
+    {
+        $overview = [[
+            'reference' => 'demo',
+            'total' => 2,
+            'pending' => 1,
+            'last' => new \DateTimeImmutable('2026-06-23 10:00:00'),
+        ]];
+        $this->comments->expects(self::once())->method('findReferencesOverview')->willReturn($overview);
+
+        $controller = new class($this->manager, $this->comments, $this->reactions, $this->translator) extends DiscussionAdminController {
+            /** @var array<string, mixed> */
+            public array $renderedParameters = [];
+
+            public string $renderedView = '';
+
+            protected function render(string $view, array $parameters = [], ?Response $response = null): Response
+            {
+                $this->renderedView = $view;
+                $this->renderedParameters = $parameters;
+
+                return new Response();
+            }
+        };
+
+        $controller->index();
+
+        self::assertSame('@bolt-discussion/backend/index.html.twig', $controller->renderedView);
+        self::assertSame($overview, $controller->renderedParameters['discussions']);
+    }
+
     public function testRedirectUsesPostedReferenceWhenProvided(): void
     {
         $comment = (new DiscussionComment())->setReference('demo')->setStatus(CommentStatus::Published);
