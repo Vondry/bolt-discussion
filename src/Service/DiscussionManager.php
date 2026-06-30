@@ -13,6 +13,7 @@ use Bolt\Discussion\Repository\DiscussionReactionRepository;
 use Bolt\Utils\ThumbnailHelper;
 use DateTimeImmutable;
 use DateTimeInterface;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
@@ -265,11 +266,21 @@ class DiscussionManager
             throw new ValidationException('Unknown reaction.');
         }
 
+        $commentId = (int) $comment->getId();
         $token = $this->visitor->getToken();
-        $existing = $this->reactions->findOneFor((int) $comment->getId(), $emoji, $token);
+        $existing = $this->reactions->findOneFor($commentId, $emoji, $token);
+
+        // Snapshot the current count before mutating. The new aggregate is then
+        // derived as snapshot ± 1, so we never query the entity manager after a
+        // write — important because a flush that hits the unique constraint
+        // closes the manager (see the concurrent-add handling below).
+        $summary = $this->reactions->summaryFor([$commentId], $token);
+        $count = $summary[$commentId][$emoji]['count'] ?? 0;
 
         if ($existing !== null) {
             $this->em->remove($existing);
+            $this->em->flush();
+            $count = max(0, $count - 1);
             $mine = false;
         } else {
             $ipHash = $this->hashIp($request->getClientIp());
@@ -285,17 +296,22 @@ class DiscussionManager
                 ->setEmoji($emoji)
                 ->setVisitorToken($token)
                 ->setIpHash($ipHash);
-            $this->em->persist($reaction);
+
+            try {
+                $this->em->persist($reaction);
+                $this->em->flush();
+            } catch (UniqueConstraintViolationException) {
+                // A concurrent request inserted the identical (comment, emoji,
+                // token) row first. The desired end state already holds, so this
+                // is a success, not an error.
+            }
+
+            ++$count;
             $mine = true;
         }
 
-        $this->em->flush();
-
-        $summary = $this->reactions->summaryFor([(int) $comment->getId()], $token);
-        $count = $summary[(int) $comment->getId()][$emoji]['count'] ?? 0;
-
         return [
-            'commentId' => (int) $comment->getId(),
+            'commentId' => $commentId,
             'emoji' => $emoji,
             'count' => $count,
             'mine' => $mine,

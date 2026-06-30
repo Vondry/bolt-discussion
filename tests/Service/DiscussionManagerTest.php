@@ -269,7 +269,8 @@ class DiscussionManagerTest extends TestCase
         $this->visitor->method('isLoggedIn')->willReturn(false);
         $this->spamChecker->method('isReactionFlooding')->willReturn(false);
         $this->reactions->method('findOneFor')->willReturn(null);
-        $this->reactions->method('summaryFor')->willReturn([0 => ['👍' => ['count' => 1, 'mine' => true]]]);
+        // Snapshot before the add has no row for this visitor; +1 after.
+        $this->reactions->method('summaryFor')->willReturn([0 => []]);
         $expectedIpHash = hash_hmac('sha256', 'bolt-discussion|203.0.113.5', 'test-ip-hash-key');
         $this->em->expects(self::once())->method('persist')->with(
             self::callback(static fn (DiscussionReaction $r): bool => $r->getIpHash() === $expectedIpHash)
@@ -287,13 +288,36 @@ class DiscussionManagerTest extends TestCase
         $existing = (new DiscussionReaction())->setComment($comment)->setEmoji('👍')->setVisitorToken('visitor-1');
         $this->visitor->method('getToken')->willReturn('visitor-1');
         $this->reactions->method('findOneFor')->willReturn($existing);
-        $this->reactions->method('summaryFor')->willReturn([0 => []]);
+        // Snapshot before the remove counts this visitor's row; -1 after.
+        $this->reactions->method('summaryFor')->willReturn([0 => ['👍' => ['count' => 1, 'mine' => true]]]);
         $this->em->expects(self::once())->method('remove')->with($existing);
 
         $result = $this->manager->toggleReaction($comment, '👍', $this->request());
 
         self::assertFalse($result['mine']);
         self::assertSame(0, $result['count']);
+    }
+
+    public function testConcurrentDuplicateAdditionIsTreatedAsSuccess(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo');
+        $this->visitor->method('getToken')->willReturn('anon:abc');
+        $this->visitor->method('isLoggedIn')->willReturn(false);
+        $this->spamChecker->method('isReactionFlooding')->willReturn(false);
+        $this->reactions->method('findOneFor')->willReturn(null);
+        $this->reactions->method('summaryFor')->willReturn([0 => ['👍' => ['count' => 2, 'mine' => false]]]);
+
+        // A concurrent request inserts the identical row first, so our flush hits
+        // the unique constraint. That must surface as success, not a 500.
+        $driverException = $this->createMock(\Doctrine\DBAL\Driver\Exception::class);
+        $this->em->method('flush')->willThrowException(
+            new \Doctrine\DBAL\Exception\UniqueConstraintViolationException($driverException, null)
+        );
+
+        $result = $this->manager->toggleReaction($comment, '👍', $this->request());
+
+        self::assertTrue($result['mine']);
+        self::assertSame(3, $result['count'], 'The winning insert is reflected as +1 over the snapshot.');
     }
 
     public function testDisallowedReactionEmojiIsRejected(): void
