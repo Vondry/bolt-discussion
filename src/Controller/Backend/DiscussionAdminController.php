@@ -28,6 +28,7 @@ class DiscussionAdminController extends AbstractController implements BackendZon
 {
     private const CSRF_ID = 'bolt_discussion_admin';
     private const DOMAIN = 'bolt_discussion';
+    private const REFERENCE_PATTERN = '/\A[A-Za-z0-9_.:-]{1,191}\z/D';
 
     public function __construct(
         private readonly DiscussionManager $manager,
@@ -227,7 +228,14 @@ class DiscussionAdminController extends AbstractController implements BackendZon
 
     private function redirectToThread(DiscussionComment $comment, Request $request): RedirectResponse
     {
-        $reference = (string) $request->request->get('reference', $comment->getReference());
+        // The posted reference is only a convenience for returning to the right
+        // listing. Fall back to the comment's own (always valid) reference when
+        // it is missing or malformed, so a crafted value cannot break route
+        // generation (InvalidParameterException => 500).
+        $reference = (string) $request->request->get('reference', '');
+        if (preg_match(self::REFERENCE_PATTERN, $reference) !== 1) {
+            $reference = $comment->getReference();
+        }
 
         return $this->redirectToRoute('bolt_discussion_admin_thread', ['reference' => $reference]);
     }

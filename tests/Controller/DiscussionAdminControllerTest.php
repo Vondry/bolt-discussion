@@ -185,6 +185,36 @@ class DiscussionAdminControllerTest extends TestCase
         self::assertSame(['Comment #10 deleted.'], $this->session->getFlashBag()->peek('success'));
     }
 
+    public function testRedirectFallsBackToCommentReferenceWhenPostedOneIsMalformed(): void
+    {
+        $comment = (new DiscussionComment())->setReference('demo')->setStatus(CommentStatus::Published);
+        $this->setCommentId($comment, 11);
+
+        $this->manager->expects(self::once())->method('deleteComment')->with($comment);
+        // A malformed posted reference must not reach route generation; the
+        // comment's own valid reference is used instead.
+        $this->urlGenerator->expects(self::once())
+            ->method('generate')
+            ->with('bolt_discussion_admin_thread', ['reference' => 'demo'], UrlGeneratorInterface::ABSOLUTE_PATH)
+            ->willReturn('/extension/discussion/view/demo');
+
+        $controller = $this->controller(csrfValid: true);
+        $request = Request::create('/extension/discussion/comment/11/delete', 'POST', [
+            '_token' => 'good',
+            'reference' => 'bad/../reference space',
+        ]);
+        $request->setSession($this->session);
+        $this->requestStack->push($request);
+
+        try {
+            $response = $controller->action($comment, 'delete', $request);
+        } finally {
+            $this->requestStack->pop();
+        }
+
+        self::assertSame('/extension/discussion/view/demo', $response->getTargetUrl());
+    }
+
     public function testThreadViewReceivesGroupedThreadsWithReactions(): void
     {
         $root = $this->comment(1, 'Root', '2026-06-23 10:00:00');
