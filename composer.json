@@ -16,10 +16,10 @@
     "require-dev": {
         "bolt/core": "^6.0",
         "phpstan/extension-installer": "1.4.3",
-        "phpstan/phpstan": "2.1.31",
-        "phpstan/phpstan-deprecation-rules": "2.0.3",
+        "phpstan/phpstan": "2.2.2",
+        "phpstan/phpstan-deprecation-rules": "2.0.4",
         "phpunit/phpunit": "^10.5",
-        "rector/rector": "2.2.7",
+        "rector/rector": "2.5.2",
         "symplify/easy-coding-standard": "^13"
     },
     "autoload": {

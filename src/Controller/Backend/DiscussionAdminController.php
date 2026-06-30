@@ -217,8 +217,7 @@ class DiscussionAdminController extends AbstractController implements BackendZon
         match ($action) {
             'delete' => $this->manager->deleteComment($comment),
             'restore' => $this->manager->setStatus($comment, CommentStatus::Published),
-            'spam' => $this->manager->setStatus($comment, CommentStatus::Spam),
-            default => throw new BadRequestHttpException('Unknown moderation action.'),
+            default => $this->manager->setStatus($comment, CommentStatus::Spam),
         };
 
         $this->addFlash('success', $this->translator->trans($flashKey, ['%id%' => $comment->getId()], self::DOMAIN));
