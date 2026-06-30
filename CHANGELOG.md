@@ -24,6 +24,14 @@ bin/console cache:clear
   `bolt_discussion_reaction`. The migration only adds the column (no backfill,
   no downtime), but it **must run before** the new code serves traffic, since
   adding a reaction now writes that column. Existing rows are unaffected.
+- **PHP namespaces changed** from `BoltDiscussion\...` to
+  `Bolt\Discussion\...`. Update any custom imports, service references, manual
+  extension entrypoint references, and Doctrine mapping prefixes to the new
+  namespace (`Bolt\Discussion\Entity` for the entity mapping).
+- **The extension config file is now consistently `bolt-discussion.yaml`.** If
+  an earlier `extensions:configure` run created `config/extensions/boltdiscussion.yaml`,
+  merge any settings from it into `config/extensions/bolt-discussion.yaml` and
+  remove the duplicate.
 - New config keys (`reaction_rate_limit`, `reaction_rate_limit_seconds`) have
   built-in defaults, so existing `config/extensions/bolt-discussion.yaml` files
   keep working unchanged — add them only to tune or disable the cap.
@@ -42,17 +50,28 @@ bin/console cache:clear
 
 - Reaction toggling is now idempotent under concurrent identical adds. A fast
   double-click previously raced into a unique-constraint violation and surfaced
-  as a 500; the duplicate insert is now treated as success.
+  as a 500; the duplicate insert is now treated as success and does not
+  double-count when the aggregate snapshot already includes the winning insert.
 - The admin moderation redirect no longer trusts the posted `reference`
   verbatim — a value outside the allowed pattern threw an
   `InvalidParameterException` (500). It is validated and falls back to the
   comment's own reference.
+- Malformed request payload values are validated before processing. Non-scalar
+  comment fields, parent IDs, CSRF tokens, and reaction emoji can no longer be
+  coerced into unexpected strings.
+- Installing/configuring the extension no longer creates conflicting
+  `boltdiscussion.yaml` and `bolt-discussion.yaml` config files.
 - `match.alwaysTrue` analysis error in the admin moderation action.
 
 ### Changed
 
+- PHP namespaces, Composer autoloading, and the Bolt extension entrypoint now
+  use the idiomatic `Bolt\Discussion\...` namespace.
 - Dev tooling bumped: PHPStan `2.2.2`, phpstan-deprecation-rules `2.0.4`,
   Rector `2.5.2`.
+- Automated coverage was expanded to 100% classes, methods, and lines with
+  scenario coverage for controllers, services, repositories, Twig rendering,
+  assets, entities, menus, and subscribers.
 
 ### Security
 
