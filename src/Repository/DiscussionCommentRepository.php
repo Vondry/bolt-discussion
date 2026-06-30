@@ -154,6 +154,17 @@ class DiscussionCommentRepository extends ServiceEntityRepository
         return $count > 0;
     }
 
+    /**
+     * Direct replies of the given comment, regardless of status. Used when a
+     * root comment is deleted so its whole thread can be removed with it.
+     *
+     * @return DiscussionComment[]
+     */
+    public function findReplies(DiscussionComment $parent): array
+    {
+        return $this->findBy(['parent' => $parent]);
+    }
+
     public function countPublished(string $reference): int
     {
         return (int) $this->createQueryBuilder('c')

@@ -18,6 +18,26 @@ class DiscussionReactionRepository extends ServiceEntityRepository
         parent::__construct($registry, DiscussionReaction::class);
     }
 
+    /**
+     * Hard-delete every reaction belonging to the given comments. Called when
+     * comments are deleted so no reaction rows are left orphaned.
+     *
+     * @param int[] $commentIds
+     */
+    public function deleteForComments(array $commentIds): void
+    {
+        if ($commentIds === []) {
+            return;
+        }
+
+        $this->createQueryBuilder('r')
+            ->delete()
+            ->andWhere('r.comment IN (:ids)')
+            ->setParameter('ids', $commentIds)
+            ->getQuery()
+            ->execute();
+    }
+
     public function findOneFor(int $commentId, string $emoji, string $visitorToken): ?DiscussionReaction
     {
         return $this->findOneBy([

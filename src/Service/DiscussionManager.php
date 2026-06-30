@@ -119,9 +119,27 @@ class DiscussionManager
         ];
     }
 
+    /**
+     * Delete a comment and, when it is a root, its whole thread. Replies are
+     * deleted alongside their parent so none is left orphaned, and every
+     * affected comment's reactions are purged so no orphaned reaction data
+     * remains.
+     */
     public function deleteComment(DiscussionComment $comment): void
     {
         $comment->setStatus(CommentStatus::Deleted);
+
+        $affectedIds = [(int) $comment->getId()];
+
+        if (! $comment->isReply()) {
+            foreach ($this->comments->findReplies($comment) as $reply) {
+                $reply->setStatus(CommentStatus::Deleted);
+                $affectedIds[] = (int) $reply->getId();
+            }
+        }
+
+        $this->reactions->deleteForComments($affectedIds);
+
         $this->em->flush();
     }
 
