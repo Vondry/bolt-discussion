@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Controller\Backend;
+namespace Bolt\Discussion\Controller\Backend;
 
 use Bolt\Controller\Backend\BackendZoneInterface;
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Repository\DiscussionCommentRepository;
-use BoltDiscussion\Repository\DiscussionReactionRepository;
-use BoltDiscussion\Service\DiscussionManager;
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Repository\DiscussionReactionRepository;
+use Bolt\Discussion\Service\DiscussionManager;
 use MessageFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;

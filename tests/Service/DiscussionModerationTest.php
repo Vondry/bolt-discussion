@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Service;
+namespace Bolt\Discussion\Tests\Service;
 
 use Bolt\Utils\ThumbnailHelper;
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Repository\DiscussionCommentRepository;
-use BoltDiscussion\Repository\DiscussionReactionRepository;
-use BoltDiscussion\Service\DiscussionConfig;
-use BoltDiscussion\Service\DiscussionManager;
-use BoltDiscussion\Service\SpamChecker;
-use BoltDiscussion\Service\VisitorTokenProvider;
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Repository\DiscussionReactionRepository;
+use Bolt\Discussion\Service\DiscussionConfig;
+use Bolt\Discussion\Service\DiscussionManager;
+use Bolt\Discussion\Service\SpamChecker;
+use Bolt\Discussion\Service\VisitorTokenProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 

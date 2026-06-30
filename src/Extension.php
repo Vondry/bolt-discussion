@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion;
+namespace Bolt\Discussion;
 
 use Bolt\Extension\BaseExtension;
 
@@ -11,19 +11,6 @@ class Extension extends BaseExtension
     public function getName(): string
     {
         return 'Bolt Discussion';
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getConfigFilenames(): array
-    {
-        $path = $this->getBoltConfig()->getPath('extensions_config');
-
-        return [
-            'main' => sprintf('%s%sbolt-discussion.yaml', $path, DIRECTORY_SEPARATOR),
-            'local' => sprintf('%s%sbolt-discussion_local.yaml', $path, DIRECTORY_SEPARATOR),
-        ];
     }
 
     public function initialize(): void

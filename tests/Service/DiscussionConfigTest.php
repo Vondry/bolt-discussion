@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Service;
+namespace Bolt\Discussion\Tests\Service;
 
 use Bolt\Extension\ExtensionRegistry;
-use BoltDiscussion\Service\DiscussionConfig;
+use Bolt\Discussion\Service\DiscussionConfig;
 use PHPUnit\Framework\TestCase;
 
 class DiscussionConfigTest extends TestCase

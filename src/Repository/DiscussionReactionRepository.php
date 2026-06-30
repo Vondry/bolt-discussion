@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Repository;
+namespace Bolt\Discussion\Repository;
 
-use BoltDiscussion\Entity\DiscussionReaction;
+use Bolt\Discussion\Entity\DiscussionReaction;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Translation;
+namespace Bolt\Discussion\Tests\Translation;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

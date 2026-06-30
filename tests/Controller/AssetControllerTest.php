@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Controller;
+namespace Bolt\Discussion\Tests\Controller;
 
-use BoltDiscussion\Controller\AssetController;
+use Bolt\Discussion\Controller\AssetController;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 

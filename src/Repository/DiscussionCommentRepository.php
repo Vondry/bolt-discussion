@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Repository;
+namespace Bolt\Discussion\Repository;
 
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Enum\CommentStatus;
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Enum\CommentStatus;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;

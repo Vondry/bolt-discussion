@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Service;
+namespace Bolt\Discussion\Service;
 
 use Bolt\Entity\User;
 use DateTimeImmutable;

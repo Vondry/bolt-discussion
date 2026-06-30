@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Menu;
+namespace Bolt\Discussion\Menu;
 
 use Bolt\Menu\ExtensionBackendMenuInterface;
 use Knp\Menu\MenuItem;

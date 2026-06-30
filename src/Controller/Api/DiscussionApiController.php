@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Controller\Api;
+namespace Bolt\Discussion\Controller\Api;
 
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Exception\ValidationException;
+use Bolt\Discussion\Service\DiscussionManager;
+use Bolt\Discussion\Service\VisitorTokenProvider;
 use Bolt\Extension\ExtensionController;
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Exception\ValidationException;
-use BoltDiscussion\Service\DiscussionManager;
-use BoltDiscussion\Service\VisitorTokenProvider;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

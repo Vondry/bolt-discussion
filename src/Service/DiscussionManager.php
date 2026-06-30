@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Service;
+namespace Bolt\Discussion\Service;
 
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Entity\DiscussionReaction;
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Exception\ValidationException;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Repository\DiscussionReactionRepository;
 use Bolt\Utils\ThumbnailHelper;
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Entity\DiscussionReaction;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Exception\ValidationException;
-use BoltDiscussion\Repository\DiscussionCommentRepository;
-use BoltDiscussion\Repository\DiscussionReactionRepository;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;

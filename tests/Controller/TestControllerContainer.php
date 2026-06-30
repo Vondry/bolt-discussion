@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Controller;
+namespace Bolt\Discussion\Tests\Controller;
 
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;

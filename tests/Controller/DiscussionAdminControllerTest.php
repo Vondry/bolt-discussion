@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Controller;
+namespace Bolt\Discussion\Tests\Controller;
 
-use BoltDiscussion\Controller\Backend\DiscussionAdminController;
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Repository\DiscussionCommentRepository;
-use BoltDiscussion\Repository\DiscussionReactionRepository;
-use BoltDiscussion\Service\DiscussionManager;
+use Bolt\Discussion\Controller\Backend\DiscussionAdminController;
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Repository\DiscussionReactionRepository;
+use Bolt\Discussion\Service\DiscussionManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;

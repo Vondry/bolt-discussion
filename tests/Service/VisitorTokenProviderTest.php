@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Service;
+namespace Bolt\Discussion\Tests\Service;
 
 use Bolt\Entity\User;
-use BoltDiscussion\Service\VisitorTokenProvider;
+use Bolt\Discussion\Service\VisitorTokenProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;

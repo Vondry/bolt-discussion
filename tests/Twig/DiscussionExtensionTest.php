@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Twig;
+namespace Bolt\Discussion\Tests\Twig;
 
-use BoltDiscussion\Repository\DiscussionCommentRepository;
-use BoltDiscussion\Service\DiscussionConfig;
-use BoltDiscussion\Service\DiscussionManager;
-use BoltDiscussion\Service\VisitorTokenProvider;
-use BoltDiscussion\Twig\DiscussionExtension;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Service\DiscussionConfig;
+use Bolt\Discussion\Service\DiscussionManager;
+use Bolt\Discussion\Service\VisitorTokenProvider;
+use Bolt\Discussion\Twig\DiscussionExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;

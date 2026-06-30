@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Service;
+namespace Bolt\Discussion\Service;
 
+use Bolt\Discussion\Extension;
 use Bolt\Extension\ExtensionRegistry;
-use BoltDiscussion\Extension;
 
 /**
  * Typed accessor over the extension's config (config/extensions/bolt-discussion.yaml),

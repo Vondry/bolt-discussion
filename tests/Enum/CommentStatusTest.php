@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Enum;
+namespace Bolt\Discussion\Tests\Enum;
 
-use BoltDiscussion\Enum\CommentStatus;
+use Bolt\Discussion\Enum\CommentStatus;
 use PHPUnit\Framework\TestCase;
 
 class CommentStatusTest extends TestCase

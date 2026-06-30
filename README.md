@@ -40,7 +40,7 @@ A pluggable, themeable discussion / comments module for **Bolt CMS 6**.
      is_bundle: false
      type: attribute
      dir: '%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/src/Entity'
-     prefix: 'BoltDiscussion\Entity'
+     prefix: 'Bolt\Discussion\Entity'
      alias: BoltDiscussion
    ```
 
@@ -97,7 +97,7 @@ markup and is then used only for interactions, older pages, and live polling.
 
 ## Configuration
 
-Edit `config/extensions/boltdiscussion.yaml` (created on first run):
+Edit `config/extensions/bolt-discussion.yaml` (created on first run):
 
 | Key                  | Default                       | Description                                            |
 |----------------------|-------------------------------|--------------------------------------------------------|

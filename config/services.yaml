@@ -11,6 +11,6 @@ framework:
     paths: ['%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/translations']
 
 services:
-  BoltDiscussion\Menu\DiscussionMenu:
+  Bolt\Discussion\Menu\DiscussionMenu:
     autowire: true
     tags: ['bolt.extension_backend_menu']

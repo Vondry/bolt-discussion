@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Enum;
+namespace Bolt\Discussion\Enum;
 
 enum CommentStatus: string
 {

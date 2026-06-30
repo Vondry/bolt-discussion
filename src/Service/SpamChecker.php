@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Service;
+namespace Bolt\Discussion\Service;
 
-use BoltDiscussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
 use DateTimeImmutable;
 
 /**

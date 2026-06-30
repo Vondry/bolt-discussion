@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Entity;
+namespace Bolt\Discussion\Entity;
 
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
 use Bolt\Entity\User;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Repository\DiscussionCommentRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;

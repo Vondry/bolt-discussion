@@ -24,12 +24,12 @@
     },
     "autoload": {
         "psr-4": {
-            "BoltDiscussion\\": "src/"
+            "Bolt\\Discussion\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "BoltDiscussion\\Tests\\": "tests/"
+            "Bolt\\Discussion\\Tests\\": "tests/"
         }
     },
     "minimum-stability": "dev",
@@ -38,7 +38,7 @@
         "branch-alias": {
             "dev-main": "1.0.x-dev"
         },
-        "entrypoint": "BoltDiscussion\\Extension"
+        "entrypoint": "Bolt\\Discussion\\Extension"
     },
     "config": {
         "allow-plugins": {

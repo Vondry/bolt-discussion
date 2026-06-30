@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Tests\Controller;
+namespace Bolt\Discussion\Tests\Controller;
 
-use BoltDiscussion\Controller\Api\DiscussionApiController;
-use BoltDiscussion\Entity\DiscussionComment;
-use BoltDiscussion\Enum\CommentStatus;
-use BoltDiscussion\Exception\ValidationException;
-use BoltDiscussion\Service\DiscussionManager;
-use BoltDiscussion\Service\VisitorTokenProvider;
+use Bolt\Discussion\Controller\Api\DiscussionApiController;
+use Bolt\Discussion\Entity\DiscussionComment;
+use Bolt\Discussion\Enum\CommentStatus;
+use Bolt\Discussion\Exception\ValidationException;
+use Bolt\Discussion\Service\DiscussionManager;
+use Bolt\Discussion\Service\VisitorTokenProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;

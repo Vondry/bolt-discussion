@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace BoltDiscussion\Twig;
+namespace Bolt\Discussion\Twig;
 
-use BoltDiscussion\Repository\DiscussionCommentRepository;
-use BoltDiscussion\Service\DiscussionConfig;
-use BoltDiscussion\Service\DiscussionManager;
-use BoltDiscussion\Service\VisitorTokenProvider;
+use Bolt\Discussion\Repository\DiscussionCommentRepository;
+use Bolt\Discussion\Service\DiscussionConfig;
+use Bolt\Discussion\Service\DiscussionManager;
+use Bolt\Discussion\Service\VisitorTokenProvider;
 use DateTimeImmutable;
 use DateTimeInterface;
 use MessageFormatter;
