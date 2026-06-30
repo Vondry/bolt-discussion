@@ -27,4 +27,14 @@ class DiscussionConfigTest extends TestCase
 
         self::assertSame(100, $config->clampPageSize(101));
     }
+
+    public function testReactionRateLimitDefaults(): void
+    {
+        $registry = $this->createMock(ExtensionRegistry::class);
+        $registry->method('getExtension')->willReturn(null);
+        $config = new DiscussionConfig($registry);
+
+        self::assertSame(20, $config->reactionRateLimit());
+        self::assertSame(60, $config->reactionRateLimitSeconds());
+    }
 }

@@ -111,6 +111,15 @@ Edit `config/extensions/bolt-discussion.yaml` (created on first run):
 | `require_name`       | `true`                        | Require a name from anonymous posters                  |
 | `spam_regex`         | `''`                          | If set, matching bodies are stored as spam             |
 | `rate_limit_seconds` | `10`                          | Min seconds between anonymous posts from one IP; `0` disables (logged-in users are never throttled) |
+| `reaction_rate_limit` | `20`                         | Max new reactions per IP per window; `0` disables (logged-in users are never throttled) |
+| `reaction_rate_limit_seconds` | `60`                 | Length of the reaction rate-limit window, in seconds   |
+
+> **Behind a proxy or CDN?** The per-IP limits (`rate_limit_seconds`,
+> `reaction_rate_limit`) and reaction de-duplication only work if Symfony sees
+> the real client IP. Configure
+> [`framework.trusted_proxies`](https://symfony.com/doc/current/deployment/proxies.html)
+> for your environment — otherwise every visitor appears to share the proxy's IP
+> (over-throttling) or a spoofed `X-Forwarded-For` could bypass the limits.
 
 ## Theming
 
