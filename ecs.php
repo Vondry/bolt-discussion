@@ -42,6 +42,7 @@ use Symplify\CodingStandard\Fixer\ArrayNotation\ArrayListItemNewlineFixer;
 use Symplify\CodingStandard\Fixer\ArrayNotation\ArrayOpenerAndCloserNewlineFixer;
 use Symplify\CodingStandard\Fixer\ArrayNotation\StandaloneLineInMultilineArrayFixer;
 use Symplify\CodingStandard\Fixer\Commenting\RemoveUselessDefaultCommentFixer;
+use Symplify\CodingStandard\Fixer\Spacing\MethodChainingNewlineFixer;
 use Symplify\CodingStandard\Fixer\Strict\BlankLineAfterStrictTypesFixer;
 use Symplify\EasyCodingStandard\Config\ECSConfig;
 
@@ -65,6 +66,9 @@ return ECSConfig::configure()
         ArrayOpenerAndCloserNewlineFixer::class => null,
         ArrayListItemNewlineFixer::class => null,
         MbStrFunctionsFixer::class => null, // mb_trim() requires PHP 8.4+, skip for PHP 8.2/8.3 compatibility
+        // Short chains such as `$qb->getQuery()->getResult()` read better on one
+        // line, and the fixer also splits a property read off its getter call.
+        MethodChainingNewlineFixer::class => null,
     ])
     ->withRules([
         StandaloneLineInMultilineArrayFixer::class,

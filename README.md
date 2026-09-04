@@ -32,19 +32,7 @@ A pluggable, themeable discussion / comments module for **Bolt CMS 6**.
    npm install && npm run build
    ```
 
-3. **Register the entity mapping.** Extensions aren't bundles, so add this under
-   `doctrine.orm.mappings` in your project's `config/packages/doctrine.yaml`:
-
-   ```yaml
-   BoltDiscussion:
-     is_bundle: false
-     type: attribute
-     dir: '%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/src/Entity'
-     prefix: 'Bolt\Discussion\Entity'
-     alias: BoltDiscussion
-   ```
-
-4. **Copy routes/services and create the tables:**
+3. **Copy routes/services and create the tables:**
 
    ```bash
    bin/console extensions:configure
@@ -52,6 +40,11 @@ A pluggable, themeable discussion / comments module for **Bolt CMS 6**.
    bin/console doctrine:migrations:migrate
    bin/console cache:clear
    ```
+
+   `extensions:configure` copies the extension's `config/services.yaml` to
+   `config/packages/extension_bolt-discussion.yaml`, which registers the entity
+   mapping, the `@bolt-discussion` Twig namespace and the translation catalogs.
+   No manual edit of `config/packages/doctrine.yaml` is needed.
 
 ## Upgrading
 
@@ -167,8 +160,13 @@ regardless of stylesheet load order.)
 ```
 
 See the rockfest theme (`public/theme/rockfest/css/discussion-theme.css`) for a
-complete "gig-poster" example combining both. You can also override
-`templates/mount.html.twig` by placing a same-named template in your active theme.
+complete "gig-poster" example combining both.
+
+**3. Replace the markup** — copy the extension's `templates/mount.html.twig` to
+`bolt-discussion/mount.html.twig` in your active theme. When that file exists it
+is rendered instead of the shipped one, with the same variables. (A theme cannot
+shadow `@bolt-discussion/mount.html.twig` directly: Bolt prepends the theme
+directory to Twig's main namespace only, so the override needs its own path.)
 
 ### Built-in UX
 
