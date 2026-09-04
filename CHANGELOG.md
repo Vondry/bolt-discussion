@@ -4,6 +4,35 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-09-04
+
+### Upgrading
+
+Re-run `bin/console extensions:configure && bin/console cache:clear` so the
+regenerated `config/packages/extension_bolt-discussion.yaml` picks up the Twig
+namespace and entity mapping below. The manual `doctrine.orm.mappings` block
+that earlier versions asked you to add to `config/packages/doctrine.yaml` is no
+longer needed — it is harmless if left in place, but can be removed.
+
+### Fixed
+
+- **`@bolt-discussion` is now registered as a Twig path in the container**, not
+  only at runtime from `Extension::initialize()`. `addTwigNamespace()` prepends
+  the path to the Twig environment of the current web request, so the namespace
+  did not exist on the CLI: `bin/console debug:twig @bolt-discussion/mount.html.twig`
+  reported *No template paths configured for "@bolt-discussion" namespace*, and
+  console/worker rendering of the mount template failed. The runtime call is
+  kept as a fallback for projects that have not re-run `extensions:configure`.
+- **The entity mapping ships with the extension.** `config/services.yaml` now
+  carries the `doctrine.orm.mappings` entry (as `bolt/article` and
+  `bolt/redactor` do), so `extensions:configure` registers
+  `Bolt\Discussion\Entity` and installing no longer requires hand-editing
+  `config/packages/doctrine.yaml`.
+- **Theme overrides of the mount template work.** Bolt prepends the active theme
+  to Twig's main namespace only, so a theme copy could never shadow
+  `@bolt-discussion/mount.html.twig`. `discussion()` now renders
+  `bolt-discussion/mount.html.twig` from the theme when that file exists.
+
 ## [2.0.0] - 2026-06-30
 
 ### Upgrading

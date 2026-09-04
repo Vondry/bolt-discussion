@@ -28,6 +28,13 @@ class DiscussionExtension extends AbstractExtension
     private const DOMAIN = 'bolt_discussion';
 
     /**
+     * Shipped mount template, and the theme path that overrides it.
+     */
+    private const TEMPLATE = '@bolt-discussion/mount.html.twig';
+
+    private const TEMPLATE_OVERRIDE = 'bolt-discussion/mount.html.twig';
+
+    /**
      * discussion() option => label id it overrides, so a single discussion can
      * carry its own composer copy.
      */
@@ -106,7 +113,20 @@ class DiscussionExtension extends AbstractExtension
             'initialThreads' => $this->initialThreads($initialPage['comments'], $locale, $replyCountForms),
         ];
 
-        return $twig->render('@bolt-discussion/mount.html.twig', $context);
+        return $twig->render($this->template($twig), $context);
+    }
+
+    /**
+     * The shipped template, unless the active theme ships its own copy at
+     * `bolt-discussion/mount.html.twig`. Bolt prepends the theme directory to
+     * Twig's main namespace only, so a theme cannot shadow a template inside
+     * the @bolt-discussion namespace; this gives themes an explicit hook.
+     */
+    private function template(Environment $twig): string
+    {
+        return $twig->getLoader()->exists(self::TEMPLATE_OVERRIDE)
+            ? self::TEMPLATE_OVERRIDE
+            : self::TEMPLATE;
     }
 
     public function count(string|Stringable $reference): int

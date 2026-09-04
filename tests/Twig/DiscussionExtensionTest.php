@@ -19,7 +19,10 @@ use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\LocaleAwareInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\Loader\ChainLoader;
 use Twig\Loader\FilesystemLoader;
+use Twig\Loader\LoaderInterface;
 use Twig\Markup;
 use Twig\TwigFilter;
 
@@ -141,6 +144,20 @@ class DiscussionExtensionTest extends TestCase
 
         self::assertStringContainsString('data-reference="rockfest-2027-lineup"', $html);
         self::assertStringContainsString('data-list-url="/discussion/api/rockfest-2027-lineup"', $html);
+    }
+
+    public function testThemeCopyOfTheMountTemplateIsRenderedInsteadOfTheShippedOne(): void
+    {
+        // Bolt prepends the active theme to Twig's main namespace only, so a
+        // theme cannot shadow @bolt-discussion/mount.html.twig; it overrides by
+        // shipping bolt-discussion/mount.html.twig instead.
+        $theme = new ArrayLoader([
+            'bolt-discussion/mount.html.twig' => '<div class="theme-mount">{{ reference }}</div>',
+        ]);
+
+        $html = $this->renderWith([], 'article-1', $theme);
+
+        self::assertSame('<div class="theme-mount">article-1</div>', $html);
     }
 
     public function testStringableReferenceCanBeCountedFromTextFieldValue(): void
@@ -330,8 +347,11 @@ class DiscussionExtensionTest extends TestCase
     /**
      * @param array<string, mixed> $options
      */
-    private function renderWith(array $options, string|\Stringable $reference = 'article-1'): string
-    {
+    private function renderWith(
+        array $options,
+        string|\Stringable $reference = 'article-1',
+        ?LoaderInterface $themeLoader = null
+    ): string {
         $expectedReference = (string) $reference;
         $config = $this->createMock(DiscussionConfig::class);
         $config->method('pollInterval')->willReturn(10000);
@@ -376,7 +396,7 @@ class DiscussionExtensionTest extends TestCase
 
         $loader = new FilesystemLoader();
         $loader->addPath(\dirname(__DIR__, 2) . '/templates', 'bolt-discussion');
-        $twig = new Environment($loader);
+        $twig = new Environment($themeLoader instanceof LoaderInterface ? new ChainLoader([$themeLoader, $loader]) : $loader);
         $twig->addFilter(new TwigFilter('trans', static fn (string $message): string => $message));
 
         $extension = new DiscussionExtension(

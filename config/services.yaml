@@ -5,10 +5,30 @@
 # Bolt applies through a file-scoped `_instanceof` (which does not reach the
 # generated file): the backend menu integration.
 
+# Register the @bolt-discussion Twig namespace at container level, so it resolves
+# everywhere: web requests, the CLI (`debug:twig`, `cache:warmup`) and workers.
+# `BaseExtension::addTwigNamespace()` only prepends the path to the running Twig
+# environment during a web request, which leaves the console without it.
+twig:
+  paths:
+    '%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/templates': bolt-discussion
+
 # Register the extension's translation catalogs (domain: bolt_discussion).
 framework:
   translator:
     paths: ['%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/translations']
+
+# Map the extension's entities. Extensions aren't bundles, so the mapping has to
+# name the directory and namespace explicitly.
+doctrine:
+  orm:
+    mappings:
+      BoltDiscussion:
+        is_bundle: false
+        type: attribute
+        dir: '%kernel.project_dir%/vendor/tomvondracek/bolt-discussion/src/Entity'
+        prefix: 'Bolt\Discussion\Entity'
+        alias: BoltDiscussion
 
 services:
   Bolt\Discussion\Menu\DiscussionMenu:
