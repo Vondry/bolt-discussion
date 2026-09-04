@@ -42,7 +42,6 @@ class ExtensionTest extends TestCase
         $extension = new Extension();
         $reflection = new ReflectionClass($extension);
         $property = $reflection->getProperty('boltConfig');
-        $property->setAccessible(true);
         $property->setValue($extension, $config);
 
         $filenames = $extension->getConfigFilenames();
