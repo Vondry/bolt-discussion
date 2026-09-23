@@ -51,7 +51,7 @@ class DiscussionManager
             throw new ValidationException('Invalid discussion reference.');
         }
 
-        $body = trim($this->optionalString($input['body'] ?? null));
+        $body = mb_trim($this->optionalString($input['body'] ?? null));
         if ($body === '') {
             throw new ValidationException('Comment cannot be empty.');
         }
@@ -60,7 +60,7 @@ class DiscussionManager
         }
 
         $user = $this->visitor->getUser();
-        $authorName = trim($this->optionalString($input['authorName'] ?? null));
+        $authorName = mb_trim($this->optionalString($input['authorName'] ?? null));
         if ($user !== null) {
             $authorName = $authorName !== '' ? $authorName : ($user->getDisplayName() ?: $user->getUserIdentifier());
         } elseif ($authorName === '' && $this->config->requireName()) {
@@ -336,7 +336,7 @@ class DiscussionManager
         }
 
         if (is_string($parentId)) {
-            $parentId = trim($parentId);
+            $parentId = mb_trim($parentId);
             if ($parentId === '' || $parentId === '0') {
                 return null;
             }

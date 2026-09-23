@@ -11,6 +11,7 @@
     ],
     "require": {
         "php": ">=8.2",
+        "symfony/polyfill-php84": "^1.38",
         "twig/twig": "^3.3"
     },
     "require-dev": {

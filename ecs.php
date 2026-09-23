@@ -65,7 +65,6 @@ return ECSConfig::configure()
         UnaryOperatorSpacesFixer::class => null,
         ArrayOpenerAndCloserNewlineFixer::class => null,
         ArrayListItemNewlineFixer::class => null,
-        MbStrFunctionsFixer::class => null, // mb_trim() requires PHP 8.4+, skip for PHP 8.2/8.3 compatibility
         // Short chains such as `$qb->getQuery()->getResult()` read better on one
         // line, and the fixer also splits a property read off its getter call.
         MethodChainingNewlineFixer::class => null,

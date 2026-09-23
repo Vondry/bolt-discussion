@@ -25,7 +25,7 @@ class SpamChecker
      */
     public function isHoneypotTripped(?string $honeypotValue): bool
     {
-        return is_string($honeypotValue) && trim($honeypotValue) !== '';
+        return is_string($honeypotValue) && mb_trim($honeypotValue) !== '';
     }
 
     /**

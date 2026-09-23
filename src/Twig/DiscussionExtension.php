@@ -195,7 +195,7 @@ class DiscussionExtension extends AbstractExtension
 
         $value = (string) $value;
 
-        return trim($value) === '' ? null : $value;
+        return mb_trim($value) === '' ? null : $value;
     }
 
     /**
@@ -272,7 +272,7 @@ class DiscussionExtension extends AbstractExtension
     private function withPresentation(array $comment): array
     {
         $author = (string) ($comment['author'] ?? '');
-        $parts = preg_split('/\s+/u', trim($author), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $parts = preg_split('/\s+/u', mb_trim($author), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         if ($parts === []) {
             $initials = '?';
         } elseif (count($parts) === 1) {
