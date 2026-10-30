@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-10-30
+
+### Changed
+
+- `discussion.js` is built with Symfony Encore 7 and Babel 8, which compile for
+  browserslist's `defaults` instead of ES5: the bundle shrinks from 144 KiB to
+  60 KiB, and browsers outside `defaults` (such as Internet Explorer) are no
+  longer supported. `discussion.css` is equivalent.
+- A config value given as a list or map where a number or text is expected now
+  falls back to its default instead of becoming `1` or `"Array"`, and non-text
+  entries in `reactions` are ignored.
+- A JSON request body only keeps its named fields.
+- Requires `twig/twig` `^3.30` (was `^3.29`) and `symfony/polyfill-php84`
+  `^1.43.0` (was `^1.38.1`).
+- Development: Encore 7 (`webpack.config.mjs`), Babel 8 with
+  `babel-plugin-polyfill-corejs3`, Node `>=22.18` to build the assets,
+  PHPUnit 11, PHPStan 2.3.4 at level max, Rector 2.8.3.
+
 ## [2.0.1] - 2026-09-04
 
 ### Upgrading
