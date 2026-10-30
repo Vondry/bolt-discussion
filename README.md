@@ -15,7 +15,7 @@ A pluggable, themeable discussion / comments module for **Bolt CMS 6**.
 ## Requirements
 
 - Bolt CMS `^6.0`, PHP `>=8.2`
-- Node `>=22.13` (to build the frontend assets with Symfony Encore)
+- Node `>=22.18` (to build the frontend assets with Symfony Encore)
 
 ## Installation
 

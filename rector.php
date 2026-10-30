@@ -22,5 +22,6 @@ return RectorConfig::configure()
         symfony: true,
     )
     ->withSkip([
-        Rector\Symfony\CodeQuality\Rector\Class_\InlineClassRoutePrefixRector::class
+        // AssetInjectionSubscriberTest checks the subscribed events through getSubscribedEvents().
+        Rector\Symfony\CodeQuality\Rector\Class_\EventSubscriberToAttributeRector::class,
     ]);
