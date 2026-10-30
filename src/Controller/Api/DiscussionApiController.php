@@ -162,7 +162,7 @@ class DiscussionApiController extends ExtensionController
         if (str_contains((string) $request->headers->get('Content-Type'), 'application/json')) {
             $decoded = json_decode((string) $request->getContent(), true);
 
-            return is_array($decoded) ? $decoded : [];
+            return is_array($decoded) ? array_filter($decoded, is_string(...), ARRAY_FILTER_USE_KEY) : [];
         }
 
         return $request->request->all();

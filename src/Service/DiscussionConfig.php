@@ -25,7 +25,7 @@ class DiscussionConfig
 
     public function moderation(): string
     {
-        return (string) $this->get('moderation', 'auto');
+        return $this->string('moderation', 'auto');
     }
 
     public function isQueueModeration(): bool
@@ -35,12 +35,12 @@ class DiscussionConfig
 
     public function pollInterval(): int
     {
-        return (int) $this->get('poll_interval', 10000);
+        return $this->int('poll_interval', 10000);
     }
 
     public function pageSize(): int
     {
-        return $this->clampPageSize((int) $this->get('page_size', self::DEFAULT_PAGE_SIZE));
+        return $this->clampPageSize($this->int('page_size', self::DEFAULT_PAGE_SIZE));
     }
 
     /**
@@ -68,7 +68,11 @@ class DiscussionConfig
     {
         $reactions = $this->get('reactions', ['👍', '❤️', '😂', '🎉', '😮']);
 
-        return is_array($reactions) ? array_values(array_map(strval(...), $reactions)) : [];
+        if (! is_array($reactions)) {
+            return [];
+        }
+
+        return array_values(array_map(strval(...), array_filter($reactions, is_scalar(...))));
     }
 
     public function isAllowedReaction(string $emoji): bool
@@ -83,7 +87,7 @@ class DiscussionConfig
 
     public function maxLength(): int
     {
-        return (int) $this->get('max_length', 2000);
+        return $this->int('max_length', 2000);
     }
 
     public function requireName(): bool
@@ -93,31 +97,46 @@ class DiscussionConfig
 
     public function spamRegex(): string
     {
-        return (string) $this->get('spam_regex', '');
+        return $this->string('spam_regex', '');
     }
 
     public function rateLimitSeconds(): int
     {
-        return (int) $this->get('rate_limit_seconds', 10);
+        return $this->int('rate_limit_seconds', 10);
     }
 
     public function reactionRateLimit(): int
     {
-        return (int) $this->get('reaction_rate_limit', 20);
+        return $this->int('reaction_rate_limit', 20);
     }
 
     public function reactionRateLimitSeconds(): int
     {
-        return (int) $this->get('reaction_rate_limit_seconds', 60);
+        return $this->int('reaction_rate_limit_seconds', 60);
     }
 
     private function get(string $key, mixed $default): mixed
     {
         if ($this->config === null) {
             $extension = $this->registry->getExtension(Extension::class);
-            $this->config = $extension instanceof Extension ? $extension->getConfig()->toArray() : [];
+            $config = $extension instanceof Extension ? $extension->getConfig()->toArray() : [];
+            $this->config = array_filter($config, is_string(...), ARRAY_FILTER_USE_KEY);
         }
 
         return $this->config[$key] ?? $default;
+    }
+
+    private function string(string $key, string $default): string
+    {
+        $value = $this->get($key, $default);
+
+        return is_scalar($value) ? (string) $value : $default;
+    }
+
+    private function int(string $key, int $default): int
+    {
+        $value = $this->get($key, $default);
+
+        return is_scalar($value) ? (int) $value : $default;
     }
 }

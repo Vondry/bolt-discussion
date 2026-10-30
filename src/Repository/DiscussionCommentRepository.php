@@ -48,7 +48,10 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             $qb->andWhere('c.id > :sinceId')->setParameter('sinceId', $sinceId);
         }
 
-        return $qb->getQuery()->getResult();
+        /** @var list<DiscussionComment> $comments */
+        $comments = $qb->getQuery()->getResult();
+
+        return $comments;
     }
 
     /**
@@ -73,7 +76,10 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             $qb->andWhere('c.id < :beforeId')->setParameter('beforeId', $beforeId);
         }
 
-        return $qb->getQuery()->getResult();
+        /** @var list<DiscussionComment> $comments */
+        $comments = $qb->getQuery()->getResult();
+
+        return $comments;
     }
 
     /**
@@ -88,7 +94,8 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('c')
+        /** @var list<DiscussionComment> $comments */
+        $comments = $this->createQueryBuilder('c')
             ->andWhere('c.parent IN (:rootIds)')
             ->andWhere('c.status IN (:statuses)')
             ->setParameter('rootIds', $rootIds)
@@ -97,6 +104,8 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             ->addOrderBy('c.id', 'ASC')
             ->getQuery()
             ->getResult();
+
+        return $comments;
     }
 
     /**
@@ -112,7 +121,8 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('c')
+        /** @var list<DiscussionComment> $comments */
+        $comments = $this->createQueryBuilder('c')
             ->andWhere('c.reference = :reference')
             ->andWhere('c.id IN (:ids)')
             ->andWhere('c.status IN (:statuses)')
@@ -121,6 +131,8 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             ->setParameter('statuses', $this->visibleStatuses($includePending))
             ->getQuery()
             ->getResult();
+
+        return $comments;
     }
 
     /**
@@ -184,6 +196,7 @@ class DiscussionCommentRepository extends ServiceEntityRepository
      */
     public function findReferencesOverview(): array
     {
+        /** @var list<array{reference: string, total: int|string, pending: int|string|null, last: DateTimeImmutable|string}> $rows */
         $rows = $this->createQueryBuilder('c')
             ->select('c.reference AS reference')
             ->addSelect('COUNT(c.id) AS total')
@@ -215,7 +228,8 @@ class DiscussionCommentRepository extends ServiceEntityRepository
      */
     public function findForAdmin(string $reference): array
     {
-        return $this->createQueryBuilder('c')
+        /** @var list<DiscussionComment> $comments */
+        $comments = $this->createQueryBuilder('c')
             ->andWhere('c.reference = :reference')
             ->andWhere('c.status != :deleted')
             ->setParameter('reference', $reference)
@@ -223,5 +237,7 @@ class DiscussionCommentRepository extends ServiceEntityRepository
             ->orderBy('c.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+
+        return $comments;
     }
 }

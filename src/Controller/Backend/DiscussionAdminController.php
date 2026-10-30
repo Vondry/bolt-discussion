@@ -166,7 +166,7 @@ class DiscussionAdminController extends AbstractController implements BackendZon
         $forms = [];
         foreach (['one', 'few', 'many', 'other'] as $category) {
             $formKey = $key . '.' . $category;
-            if (isset($messages[$formKey])) {
+            if (is_string($messages[$formKey] ?? null)) {
                 $forms[$category] = $messages[$formKey];
             }
         }
