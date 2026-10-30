@@ -217,7 +217,7 @@ class DiscussionExtension extends AbstractExtension
         $forms = [];
         foreach (['one', 'few', 'many', 'other'] as $category) {
             $key = 'reply_count.' . $category;
-            if (isset($messages[$key])) {
+            if (is_string($messages[$key] ?? null)) {
                 $forms[$category] = $messages[$key];
             }
         }
@@ -244,15 +244,20 @@ class DiscussionExtension extends AbstractExtension
 
         foreach ($comments as $comment) {
             $comment = $this->withPresentation($comment);
+            $id = $comment['id'] ?? null;
             $parentId = $comment['parentId'] ?? null;
-            if ($parentId === null) {
-                $roots[(int) $comment['id']] = [
+            if (! is_int($id)) {
+                continue;
+            }
+
+            if (! is_int($parentId)) {
+                $roots[$id] = [
                     'comment' => $comment,
                     'replies' => [],
                     'replyLabel' => '',
                 ];
             } else {
-                $replies[(int) $parentId][] = $comment;
+                $replies[$parentId][] = $comment;
             }
         }
 
@@ -271,7 +276,7 @@ class DiscussionExtension extends AbstractExtension
      */
     private function withPresentation(array $comment): array
     {
-        $author = (string) ($comment['author'] ?? '');
+        $author = is_string($comment['author'] ?? null) ? $comment['author'] : '';
         $parts = preg_split('/\s+/u', mb_trim($author), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         if ($parts === []) {
             $initials = '?';
@@ -285,12 +290,13 @@ class DiscussionExtension extends AbstractExtension
 
         $hash = 0;
         $utf16 = mb_convert_encoding($author, 'UTF-16BE', 'UTF-8');
+        /** @var array<int, int> $codeUnits */
         $codeUnits = unpack('n*', $utf16) ?: [];
         foreach ($codeUnits as $codeUnit) {
             $hash = (($hash * 31) + $codeUnit) & 0xFFFFFFFF;
         }
 
-        $createdAt = new DateTimeImmutable((string) ($comment['createdAt'] ?? 'now'));
+        $createdAt = new DateTimeImmutable(is_string($comment['createdAt'] ?? null) ? $comment['createdAt'] : 'now');
         $comment['initials'] = $initials;
         $comment['avatarHue'] = $hash % 360;
         $comment['createdLabel'] = $createdAt->format('Y-m-d H:i');

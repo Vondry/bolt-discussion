@@ -77,6 +77,7 @@ class DiscussionReactionRepository extends ServiceEntityRepository
             return [];
         }
 
+        /** @var list<array{comment_id: int|string, emoji: string, total: int|string, mine: int|string|null}> $rows */
         $rows = $this->createQueryBuilder('r')
             ->select('IDENTITY(r.comment) AS comment_id')
             ->addSelect('r.emoji AS emoji')
