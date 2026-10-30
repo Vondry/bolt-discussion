@@ -1,4 +1,4 @@
-const Encore = require('@symfony/webpack-encore');
+import Encore from '@symfony/webpack-encore';
 
 if (!Encore.isRuntimeEnvironmentConfigured()) {
     Encore.configureRuntimeEnvironment(process.env.NODE_ENV || 'dev');
@@ -19,11 +19,11 @@ Encore
     .cleanupOutputBeforeBuild()
 
     .enableSassLoader()
-    .configureBabelPresetEnv((config) => {
-        config.useBuiltIns = 'usage';
-        config.corejs = '3.36';
+    // Babel 8 dropped preset-env's useBuiltIns/corejs; the plugin injects the polyfills instead.
+    .configureBabel((config) => {
+        config.plugins.push(['babel-plugin-polyfill-corejs3', { method: 'usage-global', version: '3.36' }]);
     })
     .enableSourceMaps(!Encore.isProduction())
 ;
 
-module.exports = Encore.getWebpackConfig();
+export default await Encore.getWebpackConfig();
