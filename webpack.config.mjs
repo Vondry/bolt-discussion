@@ -18,7 +18,11 @@ Encore
     .disableSingleRuntimeChunk()
     .cleanupOutputBeforeBuild()
 
-    .enableSassLoader()
+    // Encore >= 7.2.1 asks Sass for expanded output and leaves minification to a CSS minimizer
+    // that is off unless configured; Sass's own compressed style keeps discussion.css minified.
+    .enableSassLoader((options) => {
+        options.sassOptions.style = Encore.isProduction() ? 'compressed' : 'expanded';
+    })
     // Babel 8 dropped preset-env's useBuiltIns/corejs; the plugin injects the polyfills instead.
     .configureBabel((config) => {
         config.plugins.push(['babel-plugin-polyfill-corejs3', { method: 'usage-global', version: '3.36' }]);
