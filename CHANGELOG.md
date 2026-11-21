@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-11-21
+
+### Changed
+
+- Build tools updated: `@babel/core` 8.1, `sass-loader` 17.1.1, `webpack` 5.113,
+  Encore 7.2.1, Sass 1.108 and `webpack-cli` 7.3. The shipped `discussion.js`
+  and `discussion.css` are unchanged.
+
+### Fixed
+
+- Production builds keep `discussion.css` minified with Encore 7.2.1, which asks
+  Sass for expanded output and leaves minification to a CSS minimizer that is
+  off unless configured.
+
 ## [2.1.3] - 2026-11-21
 
 ### Changed
