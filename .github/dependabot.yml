@@ -1,0 +1,44 @@
+version: 2
+
+updates:
+  # The workflows pin actions to commit SHAs; this keeps the SHAs (and their version comments)
+  # current. One PR for all of them.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # A library: no composer.lock, so only widen the constraints when a release falls outside them
+  # (a new major of a dependency), never raise the lower bounds.
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: monthly
+    versioning-strategy: widen
+    ignore:
+      # Bolt 6 runs on Symfony 6.4: widening one component to a newer major would let Composer
+      # mix it with an older FrameworkBundle. Revisit when Bolt moves to a new Symfony major.
+      - dependency-name: symfony/*
+        update-types: [ 'version-update:semver-major' ]
+      # PHPUnit 11 covers every supported PHP version; a range across majors only splits CI.
+      - dependency-name: phpunit/phpunit
+        update-types: [ 'version-update:semver-major' ]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # The Encore build in public/build/. The PR only bumps package.json and package-lock.json: finish
+  # it with `npm ci && npm run build` and commit public/build/.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+      include: scope
