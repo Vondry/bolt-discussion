@@ -1,0 +1,15 @@
+# Left out of the package that Composer installs (`composer require`):
+# development files only.
+/.editorconfig         export-ignore
+/.gitattributes        export-ignore
+/.github               export-ignore
+/.gitignore            export-ignore
+/ecs.php               export-ignore
+/phpstan.dist.neon     export-ignore
+/phpunit.xml.dist      export-ignore
+/rector.php            export-ignore
+/tests                 export-ignore
+/assets                export-ignore
+/package-lock.json     export-ignore
+/package.json          export-ignore
+/webpack.config.mjs    export-ignore
