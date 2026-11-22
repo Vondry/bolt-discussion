@@ -8,6 +8,7 @@ use Bolt\Discussion\Repository\DiscussionCommentRepository;
 use Bolt\Discussion\Repository\DiscussionReactionRepository;
 use Bolt\Discussion\Service\DiscussionConfig;
 use Bolt\Discussion\Service\SpamChecker;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 class SpamCheckerTest extends TestCase
@@ -19,14 +20,14 @@ class SpamCheckerTest extends TestCase
     ): SpamChecker {
         return new SpamChecker(
             $config,
-            $comments ?? $this->createMock(DiscussionCommentRepository::class),
-            $reactions ?? $this->createMock(DiscussionReactionRepository::class),
+            $comments ?? self::createStub(DiscussionCommentRepository::class),
+            $reactions ?? self::createStub(DiscussionReactionRepository::class),
         );
     }
 
     public function testHoneypotDetection(): void
     {
-        $checker = $this->checker($this->createMock(DiscussionConfig::class));
+        $checker = $this->checker(self::createStub(DiscussionConfig::class));
 
         self::assertTrue($checker->isHoneypotTripped('http://spam'));
         self::assertFalse($checker->isHoneypotTripped(''));
@@ -70,7 +71,7 @@ class SpamCheckerTest extends TestCase
         $comments = $this->createMock(DiscussionCommentRepository::class);
         $comments->expects(self::once())
             ->method('hasRecentFromIp')
-            ->with('abc', self::isInstanceOf(\DateTimeImmutable::class))
+            ->with('abc', self::isInstanceOf(DateTimeImmutable::class))
             ->willReturn(true);
 
         self::assertTrue($this->checker($config, $comments)->isRateLimited('abc'));
@@ -112,7 +113,7 @@ class SpamCheckerTest extends TestCase
         $reactions = $this->createMock(DiscussionReactionRepository::class);
         $reactions->expects(self::once())
             ->method('countRecentFromIp')
-            ->with('abc', self::isInstanceOf(\DateTimeImmutable::class))
+            ->with('abc', self::isInstanceOf(DateTimeImmutable::class))
             ->willReturn(20);
 
         self::assertTrue($this->checker($config, null, $reactions)->isReactionFlooding('abc'));

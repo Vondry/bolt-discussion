@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bolt\Discussion\Controller\Api;
 
+use Bolt\Configuration\Config;
 use Bolt\Discussion\Entity\DiscussionComment;
 use Bolt\Discussion\Enum\CommentStatus;
 use Bolt\Discussion\Exception\ValidationException;
@@ -27,11 +28,13 @@ class DiscussionApiController extends ExtensionController
     private const SYNC_POLL_LIMIT = 100;
 
     public function __construct(
+        Config $config,
         private readonly DiscussionManager $manager,
         private readonly VisitorTokenProvider $visitor,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly TranslatorInterface $translator,
     ) {
+        parent::__construct($config);
     }
 
     #[Route('/csrf/token', name: 'bolt_discussion_api_csrf_token', methods: ['GET'])]

@@ -3,9 +3,16 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
-         cacheDirectory=".phpunit.cache">
+         cacheDirectory="var/cache/phpunit"
+         executionOrder="random"
+         failOnWarning="true"
+         failOnRisky="true"
+         failOnNotice="true"
+         failOnDeprecation="true"
+         failOnPhpunitDeprecation="true"
+         beStrictAboutOutputDuringTests="true">
     <testsuites>
-        <testsuite name="Bolt Discussion Test Suite">
+        <testsuite name="bolt-discussion">
             <directory>tests</directory>
         </testsuite>
     </testsuites>

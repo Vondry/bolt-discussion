@@ -10,13 +10,16 @@ use Bolt\Discussion\Enum\CommentStatus;
 use Bolt\Discussion\Repository\DiscussionCommentRepository;
 use Bolt\Discussion\Repository\DiscussionReactionRepository;
 use Bolt\Discussion\Service\DiscussionManager;
+use DateTimeImmutable;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\MessageCatalogueInterface;
@@ -166,7 +169,7 @@ class DiscussionAdminControllerTest extends TestCase
         $request = Request::create('/extension/discussion/comment/9/unknown', 'POST', ['_token' => 'good']);
         $request->setSession($this->session);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\BadRequestHttpException::class);
+        $this->expectException(BadRequestHttpException::class);
         $controller->action($comment, 'unknown', $request);
     }
 
@@ -177,6 +180,9 @@ class DiscussionAdminControllerTest extends TestCase
         $this->reactions->method('summaryFor')->willReturn([]);
 
         $translator = new class() implements TranslatorInterface {
+            /**
+             * @param array<mixed> $parameters
+             */
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 return strtr((string) $id, $parameters);
@@ -189,9 +195,12 @@ class DiscussionAdminControllerTest extends TestCase
         };
 
         $controller = new class($this->manager, $this->comments, $this->reactions, $translator) extends DiscussionAdminController {
-            /** @var array<string, mixed> */
+            /** @var array<mixed> */
             public array $renderedParameters = [];
 
+            /**
+             * @param array<mixed> $parameters
+             */
             protected function render(string $view, array $parameters = [], ?Response $response = null): Response
             {
                 $this->renderedParameters = $parameters;
@@ -212,16 +221,19 @@ class DiscussionAdminControllerTest extends TestCase
             'reference' => 'demo',
             'total' => 2,
             'pending' => 1,
-            'last' => new \DateTimeImmutable('2026-06-23 10:00:00'),
+            'last' => new DateTimeImmutable('2026-06-23 10:00:00'),
         ]];
         $this->comments->expects(self::once())->method('findReferencesOverview')->willReturn($overview);
 
         $controller = new class($this->manager, $this->comments, $this->reactions, $this->translator) extends DiscussionAdminController {
-            /** @var array<string, mixed> */
+            /** @var array<mixed> */
             public array $renderedParameters = [];
 
             public string $renderedView = '';
 
+            /**
+             * @param array<mixed> $parameters
+             */
             protected function render(string $view, array $parameters = [], ?Response $response = null): Response
             {
                 $this->renderedView = $view;
@@ -319,6 +331,9 @@ class DiscussionAdminControllerTest extends TestCase
             ->willReturn($reactionSummary);
 
         $translator = new class() implements TranslatorInterface, LocaleAwareInterface, TranslatorBagInterface {
+            /**
+             * @param array<mixed> $parameters
+             */
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 return strtr((string) $id, $parameters);
@@ -355,7 +370,7 @@ class DiscussionAdminControllerTest extends TestCase
         };
 
         $controller = new class($this->manager, $this->comments, $this->reactions, $translator) extends DiscussionAdminController {
-            /** @var array<string, mixed> */
+            /** @var array<mixed> */
             public array $renderedParameters = [];
 
             public string $renderedView = '';
@@ -369,6 +384,9 @@ class DiscussionAdminControllerTest extends TestCase
                 parent::__construct($manager, $comments, $reactions, $translator);
             }
 
+            /**
+             * @param array<mixed> $parameters
+             */
             protected function render(string $view, array $parameters = [], ?Response $response = null): Response
             {
                 $this->renderedView = $view;
@@ -394,14 +412,19 @@ class DiscussionAdminControllerTest extends TestCase
         self::assertSame('4 komentáře', $controller->renderedParameters['commentCountLabel']);
 
         $threads = $controller->renderedParameters['threads'];
+        self::assertIsArray($threads);
         self::assertCount(2, $threads);
-        self::assertSame($root, $threads[0]['comment']);
-        self::assertFalse($threads[0]['orphan']);
-        self::assertSame([$replyOlder, $replyNewer], $threads[0]['replies']);
-        self::assertSame('2 odpovědi', $threads[0]['replyLabel']);
-        self::assertSame($orphanReply, $threads[1]['comment']);
-        self::assertTrue($threads[1]['orphan']);
-        self::assertSame([], $threads[1]['replies']);
+        $first = $threads[0];
+        $second = $threads[1];
+        self::assertIsArray($first);
+        self::assertIsArray($second);
+        self::assertSame($root, $first['comment']);
+        self::assertFalse($first['orphan']);
+        self::assertSame([$replyOlder, $replyNewer], $first['replies']);
+        self::assertSame('2 odpovědi', $first['replyLabel']);
+        self::assertSame($orphanReply, $second['comment']);
+        self::assertTrue($second['orphan']);
+        self::assertSame([], $second['replies']);
     }
 
     private function controller(bool $csrfValid): DiscussionAdminController
@@ -429,7 +452,7 @@ class DiscussionAdminControllerTest extends TestCase
 
     private function setCommentId(DiscussionComment $comment, int $id): void
     {
-        $property = new \ReflectionProperty(DiscussionComment::class, 'id');
+        $property = new ReflectionProperty(DiscussionComment::class, 'id');
         $property->setValue($comment, $id);
     }
 
@@ -444,8 +467,8 @@ class DiscussionAdminControllerTest extends TestCase
 
         $this->setCommentId($comment, $id);
 
-        $property = new \ReflectionProperty(DiscussionComment::class, 'createdAt');
-        $property->setValue($comment, new \DateTimeImmutable($createdAt));
+        $property = new ReflectionProperty(DiscussionComment::class, 'createdAt');
+        $property->setValue($comment, new DateTimeImmutable($createdAt));
 
         return $comment;
     }

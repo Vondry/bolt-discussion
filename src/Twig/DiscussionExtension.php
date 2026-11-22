@@ -277,7 +277,8 @@ class DiscussionExtension extends AbstractExtension
     private function withPresentation(array $comment): array
     {
         $author = is_string($comment['author'] ?? null) ? $comment['author'] : '';
-        $parts = preg_split('/\s+/u', mb_trim($author), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $parts = preg_split('/\s+/u', mb_trim($author), -1, PREG_SPLIT_NO_EMPTY);
+        $parts = $parts !== false ? $parts : [];
         if ($parts === []) {
             $initials = '?';
         } elseif (count($parts) === 1) {
@@ -290,8 +291,9 @@ class DiscussionExtension extends AbstractExtension
 
         $hash = 0;
         $utf16 = mb_convert_encoding($author, 'UTF-16BE', 'UTF-8');
+        $codeUnits = unpack('n*', $utf16);
         /** @var array<int, int> $codeUnits */
-        $codeUnits = unpack('n*', $utf16) ?: [];
+        $codeUnits = $codeUnits !== false ? $codeUnits : [];
         foreach ($codeUnits as $codeUnit) {
             $hash = (($hash * 31) + $codeUnit) & 0xFFFFFFFF;
         }

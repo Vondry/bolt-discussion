@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bolt\Discussion\Tests\Controller;
 
+use Bolt\Configuration\Config;
 use Bolt\Discussion\Controller\Api\DiscussionApiController;
 use Bolt\Discussion\Entity\DiscussionComment;
 use Bolt\Discussion\Enum\CommentStatus;
@@ -12,6 +13,7 @@ use Bolt\Discussion\Service\DiscussionManager;
 use Bolt\Discussion\Service\VisitorTokenProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -84,6 +86,7 @@ class DiscussionApiControllerTest extends TestCase
         $payload = json_decode((string) $response->getContent(), true);
 
         self::assertSame(200, $response->getStatusCode());
+        self::assertIsArray($payload);
         self::assertTrue($payload['canModerate']);
     }
 
@@ -134,8 +137,12 @@ class DiscussionApiControllerTest extends TestCase
         $payload = json_decode((string) $response->getContent(), true);
 
         self::assertSame(200, $response->getStatusCode());
+        self::assertIsArray($payload);
         self::assertSame([7], $payload['removedCommentIds']);
-        self::assertSame(2, $payload['reactionUpdates'][0]['reactions'][0]['count']);
+        self::assertSame([[
+            'commentId' => 3,
+            'reactions' => [['emoji' => '👍', 'count' => 2, 'mine' => false]],
+        ]], $payload['reactionUpdates']);
     }
 
     public function testPollingRejectsInvalidSyncIdsBeforeQuerying(): void
@@ -250,7 +257,7 @@ class DiscussionApiControllerTest extends TestCase
         $this->visitor->expects(self::once())->method('applyCookie');
         $this->manager->expects(self::once())
             ->method('createComment')
-            ->with('demo', self::isType('array'), self::isInstanceOf(Request::class))
+            ->with('demo', self::isArray(), self::isInstanceOf(Request::class))
             ->willThrowException(new ValidationException('Comment is too long (max %max% characters).', ['%max%' => 10]));
 
         $controller = $this->controller(csrfValid: true);
@@ -433,15 +440,16 @@ class DiscussionApiControllerTest extends TestCase
 
     private function controller(bool $csrfValid): DiscussionApiController
     {
-        return new class($this->manager, $this->visitor, $this->csrfTokenManager, $this->translator, $csrfValid) extends DiscussionApiController {
+        return new class(self::createStub(Config::class), $this->manager, $this->visitor, $this->csrfTokenManager, $this->translator, $csrfValid) extends DiscussionApiController {
             public function __construct(
+                Config $config,
                 DiscussionManager $manager,
                 VisitorTokenProvider $visitor,
                 CsrfTokenManagerInterface $csrfTokenManager,
                 TranslatorInterface $translator,
                 private readonly bool $csrfValid,
             ) {
-                parent::__construct($manager, $visitor, $csrfTokenManager, $translator);
+                parent::__construct($config, $manager, $visitor, $csrfTokenManager, $translator);
             }
 
             protected function isCsrfTokenValid(string $id, ?string $token): bool
@@ -453,7 +461,7 @@ class DiscussionApiControllerTest extends TestCase
 
     private function setCommentId(DiscussionComment $comment, int $id): void
     {
-        $property = new \ReflectionProperty(DiscussionComment::class, 'id');
+        $property = new ReflectionProperty(DiscussionComment::class, 'id');
         $property->setValue($comment, $id);
     }
 }

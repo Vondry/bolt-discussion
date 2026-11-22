@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bolt\Discussion\Tests\Controller;
 
 use Psr\Container\ContainerInterface;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -23,7 +24,7 @@ class TestControllerContainer implements ContainerInterface
             UrlGeneratorInterface::class => $this->urlGenerator,
             'request_stack' => $this->requestStack,
             RequestStack::class => $this->requestStack,
-            default => throw new \RuntimeException('Unsupported service: ' . $id),
+            default => throw new RuntimeException('Unsupported service: ' . $id),
         };
     }
 

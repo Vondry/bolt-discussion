@@ -16,9 +16,12 @@ use Bolt\Discussion\Service\SpamChecker;
 use Bolt\Discussion\Service\VisitorTokenProvider;
 use Bolt\Entity\User;
 use Bolt\Utils\ThumbnailHelper;
+use Doctrine\DBAL\Driver\Exception;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -195,6 +198,7 @@ class DiscussionManagerTest extends TestCase
 
         $result = $manager->createComment('demo', ['body' => 'Hello', 'authorName' => ''], $this->request());
 
+        self::assertNotNull($result['comment']);
         self::assertSame('Anonymous', $result['comment']['author']);
     }
 
@@ -250,6 +254,7 @@ class DiscussionManagerTest extends TestCase
         $result = $manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
 
         self::assertSame('published', $result['status']);
+        self::assertNotNull($result['comment']);
         self::assertTrue($result['comment']['authenticated']);
         self::assertSame('Admin', $result['comment']['author']);
     }
@@ -447,9 +452,9 @@ class DiscussionManagerTest extends TestCase
 
         // A concurrent request inserts the identical row first, so our flush hits
         // the unique constraint. That must surface as success, not a 500.
-        $driverException = $this->createMock(\Doctrine\DBAL\Driver\Exception::class);
+        $driverException = self::createStub(Exception::class);
         $this->em->method('flush')->willThrowException(
-            new \Doctrine\DBAL\Exception\UniqueConstraintViolationException($driverException, null)
+            new UniqueConstraintViolationException($driverException, null)
         );
 
         $result = $this->manager->toggleReaction($comment, '👍', $this->request());
@@ -469,9 +474,9 @@ class DiscussionManagerTest extends TestCase
 
         // The duplicate row was inserted before our aggregate snapshot, so the
         // returned count must not add it a second time.
-        $driverException = $this->createMock(\Doctrine\DBAL\Driver\Exception::class);
+        $driverException = self::createStub(Exception::class);
         $this->em->method('flush')->willThrowException(
-            new \Doctrine\DBAL\Exception\UniqueConstraintViolationException($driverException, null)
+            new UniqueConstraintViolationException($driverException, null)
         );
 
         $result = $this->manager->toggleReaction($comment, '👍', $this->request());
@@ -676,7 +681,7 @@ class DiscussionManagerTest extends TestCase
         if ($parent !== null) {
             $comment->setParent($parent);
         }
-        $property = new \ReflectionProperty(DiscussionComment::class, 'id');
+        $property = new ReflectionProperty(DiscussionComment::class, 'id');
         $property->setValue($comment, $id);
 
         return $comment;
@@ -701,6 +706,7 @@ class DiscussionManagerTest extends TestCase
         $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
 
         self::assertSame('published', $result['status']);
+        self::assertNotNull($result['comment']);
         self::assertArrayHasKey('avatarUrl', $result['comment']);
         self::assertSame('/thumbs/64×64×crop/avatars/user-7.jpg', $result['comment']['avatarUrl']);
     }
@@ -721,6 +727,7 @@ class DiscussionManagerTest extends TestCase
         $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
 
         self::assertSame('published', $result['status']);
+        self::assertNotNull($result['comment']);
         self::assertArrayNotHasKey('avatarUrl', $result['comment']);
     }
 
@@ -740,6 +747,7 @@ class DiscussionManagerTest extends TestCase
         $result = $this->manager->createComment('demo', ['body' => 'Hi', 'authorName' => ''], $this->request());
 
         self::assertSame('published', $result['status']);
+        self::assertNotNull($result['comment']);
         self::assertArrayNotHasKey('avatarUrl', $result['comment']);
     }
 
@@ -755,6 +763,7 @@ class DiscussionManagerTest extends TestCase
         $result = $this->manager->createComment('demo', ['body' => 'Hello', 'authorName' => 'Jo'], $this->request());
 
         self::assertSame('published', $result['status']);
+        self::assertNotNull($result['comment']);
         self::assertArrayNotHasKey('avatarUrl', $result['comment']);
     }
 }

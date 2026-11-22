@@ -31,7 +31,7 @@ class VisitorTokenProviderTest extends TestCase
 
     public function testIsModeratorRequiresEditorRole(): void
     {
-        $user = $this->createMock(User::class);
+        $user = self::createStub(User::class);
 
         self::assertTrue($this->provider(new Request(), $user, isEditor: true)->isModerator());
         self::assertFalse($this->provider(new Request(), $user, isEditor: false)->isModerator());
@@ -160,7 +160,7 @@ class VisitorTokenProviderTest extends TestCase
 
     public function testLoginHelpersReturnBoltUsersOnly(): void
     {
-        $user = $this->createMock(User::class);
+        $user = self::createStub(User::class);
 
         $loggedIn = $this->provider(new Request(), $user);
         self::assertTrue($loggedIn->isLoggedIn());

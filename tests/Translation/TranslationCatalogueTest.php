@@ -60,7 +60,7 @@ class TranslationCatalogueTest extends TestCase
         );
 
         foreach ($translatedMessages as $key => $message) {
-            self::assertNotSame('', trim($message), sprintf('Translation "%s" is empty for locale "%s".', $key, $locale));
+            self::assertNotSame('', mb_trim($message), sprintf('Translation "%s" is empty for locale "%s".', $key, $locale));
             self::assertSame(
                 $this->placeholders($englishMessages[$key]),
                 $this->placeholders($message),
@@ -117,7 +117,7 @@ class TranslationCatalogueTest extends TestCase
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<mixed>
      */
     private function catalogue(string $locale): array
     {
@@ -133,7 +133,7 @@ class TranslationCatalogueTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $messages
+     * @param array<mixed> $messages
      * @return array<string, string>
      */
     private function flatten(array $messages, string $prefix = ''): array
@@ -144,7 +144,8 @@ class TranslationCatalogueTest extends TestCase
             if (is_array($value)) {
                 $flat += $this->flatten($value, $fullKey);
             } else {
-                $flat[$fullKey] = (string) $value;
+                self::assertIsString($value, sprintf('Message "%s" must be a string.', $fullKey));
+                $flat[$fullKey] = $value;
             }
         }
 
