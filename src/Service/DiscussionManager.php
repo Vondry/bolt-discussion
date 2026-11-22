@@ -62,7 +62,8 @@ class DiscussionManager
         $user = $this->visitor->getUser();
         $authorName = mb_trim($this->optionalString($input['authorName'] ?? null));
         if ($user !== null) {
-            $authorName = $authorName !== '' ? $authorName : ($user->getDisplayName() ?: $user->getUserIdentifier());
+            $displayName = $user->getDisplayName();
+            $authorName = $authorName !== '' ? $authorName : ($displayName !== '' ? $displayName : $user->getUserIdentifier());
         } elseif ($authorName === '' && $this->config->requireName()) {
             throw new ValidationException('Please provide your name.');
         } elseif ($authorName === '') {

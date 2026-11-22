@@ -32,8 +32,10 @@ class DiscussionMenuTest extends TestCase
             public function createItem(string $name, array $options = []): ItemInterface
             {
                 $item = new MenuItem($name, $this);
-                $item->setUri($options['uri'] ?? null);
-                foreach ($options['extras'] ?? [] as $key => $value) {
+                $uri = $options['uri'] ?? null;
+                $item->setUri(is_string($uri) ? $uri : null);
+                $extras = $options['extras'] ?? [];
+                foreach (is_array($extras) ? $extras : [] as $key => $value) {
                     $item->setExtra((string) $key, $value);
                 }
 

@@ -8,13 +8,15 @@ use Bolt\Discussion\Entity\DiscussionComment;
 use Bolt\Discussion\Entity\DiscussionReaction;
 use Bolt\Discussion\Enum\CommentStatus;
 use Bolt\Entity\User;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 
 class DiscussionEntityTest extends TestCase
 {
     public function testCommentAccessorsAndLifecycleTouch(): void
     {
-        $user = $this->createMock(User::class);
+        $user = self::createStub(User::class);
         $parent = (new DiscussionComment())
             ->setReference('demo')
             ->setAuthorName('Parent')
@@ -71,12 +73,12 @@ class DiscussionEntityTest extends TestCase
         self::assertSame('👍', $reaction->getEmoji());
         self::assertSame('anon:abc', $reaction->getVisitorToken());
         self::assertSame('hash', $reaction->getIpHash());
-        self::assertNotNull($reaction->getCreatedAt());
+        self::assertLessThanOrEqual(new DateTimeImmutable(), $reaction->getCreatedAt());
     }
 
     private function setDate(object $entity, string $property, string $value): void
     {
-        $reflection = new \ReflectionProperty($entity, $property);
-        $reflection->setValue($entity, new \DateTimeImmutable($value));
+        $reflection = new ReflectionProperty($entity, $property);
+        $reflection->setValue($entity, new DateTimeImmutable($value));
     }
 }

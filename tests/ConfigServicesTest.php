@@ -22,15 +22,28 @@ class ConfigServicesTest extends TestCase
 {
     private const VENDOR_PATH = '%kernel.project_dir%/vendor/tomvondracek/bolt-discussion';
 
-    /** @return array<string, mixed> */
-    private function config(): array
+    /**
+     * The array found under $path in config/services.yaml.
+     *
+     * @param list<string> $path
+     * @return array<mixed>
+     */
+    private function section(array $path): array
     {
-        return Yaml::parseFile(\dirname(__DIR__) . '/config/services.yaml');
+        $node = Yaml::parseFile(\dirname(__DIR__) . '/config/services.yaml');
+        foreach ($path as $key) {
+            self::assertIsArray($node);
+            self::assertArrayHasKey($key, $node);
+            $node = $node[$key];
+        }
+        self::assertIsArray($node);
+
+        return $node;
     }
 
     public function testTwigNamespaceIsRegisteredForTheShippedTemplates(): void
     {
-        $paths = $this->config()['twig']['paths'] ?? [];
+        $paths = $this->section(['twig', 'paths']);
 
         self::assertSame(
             ['bolt-discussion'],
@@ -43,7 +56,7 @@ class ConfigServicesTest extends TestCase
 
     public function testEntityMappingIsRegisteredForTheEntityNamespace(): void
     {
-        $mapping = $this->config()['doctrine']['orm']['mappings']['BoltDiscussion'] ?? [];
+        $mapping = $this->section(['doctrine', 'orm', 'mappings', 'BoltDiscussion']);
 
         self::assertFalse($mapping['is_bundle'], 'Extensions are not bundles.');
         self::assertSame('attribute', $mapping['type']);
@@ -59,7 +72,7 @@ class ConfigServicesTest extends TestCase
     {
         self::assertSame(
             [self::VENDOR_PATH . '/translations'],
-            $this->config()['framework']['translator']['paths'] ?? []
+            $this->section(['framework', 'translator', 'paths'])
         );
     }
 }

@@ -7,7 +7,7 @@ use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
     ->withCache('./var/cache/rector', FileCacheStorage::class)
-    ->withPaths(['./src'])
+    ->withPaths(['./src', './tests'])
     ->withImportNames()
     ->withParallel(timeoutSeconds: 180, jobSize: 10)
     ->withPhpSets()

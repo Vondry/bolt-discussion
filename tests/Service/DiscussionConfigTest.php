@@ -25,7 +25,7 @@ class DiscussionConfigTest extends TestCase
 
     public function testPageSizeStillClampsAtOneHundred(): void
     {
-        $config = new DiscussionConfig($this->createMock(ExtensionRegistry::class));
+        $config = new DiscussionConfig(self::createStub(ExtensionRegistry::class));
 
         self::assertSame(100, $config->clampPageSize(101));
     }

@@ -11,6 +11,7 @@ use Bolt\Discussion\Repository\DiscussionCommentRepository;
 use Bolt\Discussion\Repository\DiscussionReactionRepository;
 use Bolt\Entity\User;
 use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,6 +23,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
 use Doctrine\Persistence\ObjectRepository;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 
 class DiscussionRepositoryTest extends TestCase
 {
@@ -49,8 +51,9 @@ class DiscussionRepositoryTest extends TestCase
         ]);
 
         $registry = new class($this->em) implements ManagerRegistry {
-            public function __construct(private readonly EntityManagerInterface $em)
-            {
+            public function __construct(
+                private readonly EntityManagerInterface $em
+            ) {
             }
 
             public function getDefaultConnectionName(): string
@@ -58,7 +61,7 @@ class DiscussionRepositoryTest extends TestCase
                 return 'default';
             }
 
-            public function getConnection(string|null $name = null): object
+            public function getConnection(string|null $name = null): Connection
             {
                 return $this->em->getConnection();
             }
@@ -245,12 +248,15 @@ class DiscussionRepositoryTest extends TestCase
 
                     public function getQuery(): Query
                     {
+                        // @phpstan-ignore class.extendsFinalByPhpDoc (Doctrine's Query is final by PHPDoc only; the test needs a canned result set)
                         return new class($this->entityManager, $this->rows) extends Query {
                             /**
                              * @param array<int, array<string, mixed>> $rows
                              */
-                            public function __construct(EntityManagerInterface $em, private readonly array $rows)
-                            {
+                            public function __construct(
+                                EntityManagerInterface $em,
+                                private readonly array $rows
+                            ) {
                                 parent::__construct($em);
                             }
 
@@ -310,8 +316,9 @@ class DiscussionRepositoryTest extends TestCase
     private function registry(): ManagerRegistry
     {
         return new class($this->em) implements ManagerRegistry {
-            public function __construct(private readonly EntityManagerInterface $em)
-            {
+            public function __construct(
+                private readonly EntityManagerInterface $em
+            ) {
             }
 
             public function getDefaultConnectionName(): string
@@ -319,7 +326,7 @@ class DiscussionRepositoryTest extends TestCase
                 return 'default';
             }
 
-            public function getConnection(string|null $name = null): object
+            public function getConnection(string|null $name = null): Connection
             {
                 return $this->em->getConnection();
             }
@@ -372,17 +379,20 @@ class DiscussionRepositoryTest extends TestCase
     }
 
     /**
-     * @param object[] $entities
+     * @param DiscussionComment[] $comments
      * @return int[]
      */
-    private function ids(array $entities): array
+    private function ids(array $comments): array
     {
-        return array_map(static fn (object $entity): int => (int) $entity->getId(), $entities);
+        return array_map(static fn (DiscussionComment $comment): int => (int) $comment->getId(), $comments);
     }
 
-    private function sortedIds(object ...$entities): array
+    /**
+     * @return int[]
+     */
+    private function sortedIds(DiscussionComment ...$comments): array
     {
-        $ids = $this->ids($entities);
+        $ids = $this->ids($comments);
         sort($ids);
 
         return $ids;
@@ -390,7 +400,7 @@ class DiscussionRepositoryTest extends TestCase
 
     private function setDate(object $entity, string $property, string $value): void
     {
-        $reflection = new \ReflectionProperty($entity, $property);
+        $reflection = new ReflectionProperty($entity, $property);
         $reflection->setValue($entity, new DateTimeImmutable($value));
     }
 }

@@ -47,9 +47,10 @@ class AssetInjectionSubscriberTest extends TestCase
     public function testInjectsAssetsIntoHeadAndBodyAndAppliesVisitorCookie(): void
     {
         $routes = $this->createMock(UrlGeneratorInterface::class);
-        $routes->method('generate')->willReturnCallback(static fn (string $route, array $params): string => match ($params['file']) {
+        $routes->method('generate')->willReturnCallback(static fn (string $route, array $params): string => match ($params['file'] ?? null) {
             'discussion.css' => '/discussion/asset/discussion.css?x=<1>',
             'discussion.js' => '/discussion/asset/discussion.js?x=<2>',
+            default => self::fail('Unexpected asset requested.'),
         });
         $visitor = $this->createMock(VisitorTokenProvider::class);
         $visitor->expects(self::once())->method('applyCookie');
@@ -63,14 +64,16 @@ class AssetInjectionSubscriberTest extends TestCase
         $content = (string) $response->getContent();
         self::assertStringContainsString('<link rel="stylesheet" href="/discussion/asset/discussion.css?x=&lt;1&gt;">', $content);
         self::assertStringContainsString('<script type="module" src="/discussion/asset/discussion.js?x=&lt;2&gt;"></script>', $content);
-        self::assertStringContainsString("</head>", $content);
-        self::assertStringContainsString("</body>", $content);
+        self::assertStringContainsString('</head>', $content);
+        self::assertStringContainsString('</body>', $content);
     }
 
     public function testInjectsAssetsWhenPageHasNoHeadOrBodyTags(): void
     {
         $routes = $this->createMock(UrlGeneratorInterface::class);
-        $routes->method('generate')->willReturnCallback(static fn (string $route, array $params): string => '/assets/' . $params['file']);
+        $routes->method('generate')->willReturnCallback(
+            static fn (string $route, array $params): string => '/assets/' . (is_string($params['file'] ?? null) ? $params['file'] : '')
+        );
         $visitor = $this->createMock(VisitorTokenProvider::class);
         $visitor->expects(self::once())->method('applyCookie');
 
@@ -89,7 +92,7 @@ class AssetInjectionSubscriberTest extends TestCase
     private function event(Request $request, Response $response): ResponseEvent
     {
         return new ResponseEvent(
-            $this->createMock(HttpKernelInterface::class),
+            self::createStub(HttpKernelInterface::class),
             $request,
             HttpKernelInterface::MAIN_REQUEST,
             $response

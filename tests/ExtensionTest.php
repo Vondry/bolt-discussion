@@ -11,6 +11,7 @@ use ReflectionClass;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use UnitEnum;
 
 /**
  * Guards the config-filename contract so a single, correctly named config file
@@ -46,8 +47,12 @@ class ExtensionTest extends TestCase
 
         $filenames = $extension->getConfigFilenames();
 
-        self::assertSame('bolt-discussion.yaml', basename($filenames['main']));
-        self::assertSame('bolt-discussion_local.yaml', basename($filenames['local']));
+        $main = $filenames['main'] ?? null;
+        $local = $filenames['local'] ?? null;
+        self::assertIsString($main);
+        self::assertIsString($local);
+        self::assertSame('bolt-discussion.yaml', basename($main));
+        self::assertSame('bolt-discussion_local.yaml', basename($local));
     }
 
     public function testExtensionNameAndInitializationRegisterTwigNamespace(): void
@@ -58,8 +63,9 @@ class ExtensionTest extends TestCase
         $reflection = new ReflectionClass($extension);
         $containerProperty = $reflection->getProperty('container');
         $containerProperty->setValue($extension, new class($twig) implements ContainerInterface {
-            public function __construct(private readonly Environment $twig)
-            {
+            public function __construct(
+                private readonly Environment $twig
+            ) {
             }
 
             public function set(string $id, ?object $service): void
@@ -81,7 +87,7 @@ class ExtensionTest extends TestCase
                 return $this->has($id);
             }
 
-            public function getParameter(string $name): array|bool|string|int|float|\UnitEnum|null
+            public function getParameter(string $name): null
             {
                 return null;
             }
@@ -91,7 +97,10 @@ class ExtensionTest extends TestCase
                 return false;
             }
 
-            public function setParameter(string $name, array|bool|string|int|float|\UnitEnum|null $value): void
+            /**
+             * @param array<mixed>|bool|string|int|float|UnitEnum|null $value
+             */
+            public function setParameter(string $name, array|bool|string|int|float|UnitEnum|null $value): void
             {
             }
         });

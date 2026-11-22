@@ -30,12 +30,12 @@ class DiscussionModerationTest extends TestCase
     ): DiscussionManager {
         return new DiscussionManager(
             $em,
-            $comments ?? $this->createMock(DiscussionCommentRepository::class),
-            $reactions ?? $this->createMock(DiscussionReactionRepository::class),
-            $this->createMock(DiscussionConfig::class),
-            $this->createMock(SpamChecker::class),
-            $this->createMock(VisitorTokenProvider::class),
-            $this->createMock(ThumbnailHelper::class),
+            $comments ?? self::createStub(DiscussionCommentRepository::class),
+            $reactions ?? self::createStub(DiscussionReactionRepository::class),
+            self::createStub(DiscussionConfig::class),
+            self::createStub(SpamChecker::class),
+            self::createStub(VisitorTokenProvider::class),
+            self::createStub(ThumbnailHelper::class),
             'test-ip-hash-key',
         );
     }
@@ -92,7 +92,7 @@ class DiscussionModerationTest extends TestCase
         $reactions = $this->createMock(DiscussionReactionRepository::class);
         $reactions->expects(self::once())->method('deleteForComments')->with([1, 2]);
 
-        $this->manager($this->createMock(EntityManagerInterface::class), $comments, $reactions)->deleteComment($root);
+        $this->manager(self::createStub(EntityManagerInterface::class), $comments, $reactions)->deleteComment($root);
     }
 
     public function testDeletingReplyDoesNotLookUpFurtherReplies(): void
@@ -106,7 +106,7 @@ class DiscussionModerationTest extends TestCase
         $reactions = $this->createMock(DiscussionReactionRepository::class);
         $reactions->expects(self::once())->method('deleteForComments')->with([2]);
 
-        $this->manager($this->createMock(EntityManagerInterface::class), $comments, $reactions)->deleteComment($reply);
+        $this->manager(self::createStub(EntityManagerInterface::class), $comments, $reactions)->deleteComment($reply);
 
         self::assertSame(CommentStatus::Deleted, $reply->getStatus());
         self::assertSame(CommentStatus::Published, $root->getStatus(), 'Deleting a reply leaves its parent untouched.');

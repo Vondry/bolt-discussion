@@ -10,6 +10,8 @@ use Bolt\Discussion\Service\DiscussionManager;
 use Bolt\Discussion\Service\VisitorTokenProvider;
 use Bolt\Discussion\Twig\DiscussionExtension;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use Stringable;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -31,13 +33,13 @@ class DiscussionExtensionTest extends TestCase
     public function testTwigFunctionsAreRegistered(): void
     {
         $extension = new DiscussionExtension(
-            $this->createMock(DiscussionConfig::class),
-            $this->createMock(DiscussionManager::class),
-            $this->createMock(VisitorTokenProvider::class),
-            $this->createMock(DiscussionCommentRepository::class),
-            $this->createMock(UrlGeneratorInterface::class),
-            $this->createMock(CsrfTokenManagerInterface::class),
-            $this->createMock(TranslatorInterface::class),
+            self::createStub(DiscussionConfig::class),
+            self::createStub(DiscussionManager::class),
+            self::createStub(VisitorTokenProvider::class),
+            self::createStub(DiscussionCommentRepository::class),
+            self::createStub(UrlGeneratorInterface::class),
+            self::createStub(CsrfTokenManagerInterface::class),
+            self::createStub(TranslatorInterface::class),
         );
 
         $functions = $extension->getFunctions();
@@ -86,10 +88,10 @@ class DiscussionExtensionTest extends TestCase
         $router->method('generate')->willReturnCallback(
             static fn (string $route, array $parameters = []): string => match ($route) {
                 'bolt_discussion_api_csrf_token' => '/discussion/api/csrf/token',
-                'bolt_discussion_api_list' => '/discussion/api/' . $parameters['reference'],
+                'bolt_discussion_api_list' => '/discussion/api/' . (is_string($parameters['reference'] ?? null) ? $parameters['reference'] : ''),
                 'bolt_discussion_api_reaction' => '/discussion/api/comment/0/reaction',
                 'bolt_discussion_api_delete' => '/discussion/api/comment/0',
-                default => throw new \RuntimeException('Unexpected route'),
+                default => throw new RuntimeException('Unexpected route'),
             }
         );
 
@@ -110,7 +112,7 @@ class DiscussionExtensionTest extends TestCase
             $config,
             $manager,
             $visitor,
-            $this->createMock(DiscussionCommentRepository::class),
+            self::createStub(DiscussionCommentRepository::class),
             $router,
             $csrf,
             $translator,
@@ -134,8 +136,10 @@ class DiscussionExtensionTest extends TestCase
             '&quot;replyCount&quot;:{&quot;one&quot;:&quot;%count% reply&quot;,&quot;other&quot;:&quot;%count% replies&quot;}',
             $html
         );
-        self::assertNotContains('reply_count.many', $translator->transKeys);
-        self::assertNotContains('reply_count.few', $translator->transKeys);
+        $transKeys = get_object_vars($translator)['transKeys'] ?? null;
+        self::assertIsArray($transKeys);
+        self::assertNotContains('reply_count.many', $transKeys);
+        self::assertNotContains('reply_count.few', $transKeys);
     }
 
     public function testStringableReferenceCanBeRenderedFromTextFieldValue(): void
@@ -169,13 +173,13 @@ class DiscussionExtensionTest extends TestCase
             ->willReturn(12);
 
         $extension = new DiscussionExtension(
-            $this->createMock(DiscussionConfig::class),
-            $this->createMock(DiscussionManager::class),
-            $this->createMock(VisitorTokenProvider::class),
+            self::createStub(DiscussionConfig::class),
+            self::createStub(DiscussionManager::class),
+            self::createStub(VisitorTokenProvider::class),
             $comments,
-            $this->createMock(UrlGeneratorInterface::class),
-            $this->createMock(CsrfTokenManagerInterface::class),
-            $this->createMock(TranslatorInterface::class),
+            self::createStub(UrlGeneratorInterface::class),
+            self::createStub(CsrfTokenManagerInterface::class),
+            self::createStub(TranslatorInterface::class),
         );
 
         self::assertSame(12, $extension->count(new Markup('rockfest-2027-lineup', 'UTF-8')));
@@ -231,7 +235,7 @@ class DiscussionExtensionTest extends TestCase
         $router->method('generate')->willReturnCallback(
             static fn (string $route, array $parameters = []): string => match ($route) {
                 'bolt_discussion_api_csrf_token' => '/discussion/api/csrf/token',
-                'bolt_discussion_api_list' => '/discussion/api/' . $parameters['reference'],
+                'bolt_discussion_api_list' => '/discussion/api/' . (is_string($parameters['reference'] ?? null) ? $parameters['reference'] : ''),
                 'bolt_discussion_api_reaction' => '/discussion/api/comment/0/reaction',
                 'bolt_discussion_api_delete' => '/discussion/api/comment/0',
                 default => '/',
@@ -242,6 +246,9 @@ class DiscussionExtensionTest extends TestCase
         $csrf->method('getToken')->willReturn(new CsrfToken('bolt_discussion', 'csrf-value'));
 
         $translator = new class() implements TranslatorInterface {
+            /**
+             * @param array<mixed> $parameters
+             */
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 return strtr((string) $id, $parameters);
@@ -262,7 +269,7 @@ class DiscussionExtensionTest extends TestCase
             $config,
             $manager,
             $visitor,
-            $this->createMock(DiscussionCommentRepository::class),
+            self::createStub(DiscussionCommentRepository::class),
             $router,
             $csrf,
             $translator,
@@ -349,7 +356,7 @@ class DiscussionExtensionTest extends TestCase
      */
     private function renderWith(
         array $options,
-        string|\Stringable $reference = 'article-1',
+        string|Stringable $reference = 'article-1',
         ?LoaderInterface $themeLoader = null
     ): string {
         $expectedReference = (string) $reference;
@@ -380,7 +387,7 @@ class DiscussionExtensionTest extends TestCase
         $router->method('generate')->willReturnCallback(
             static fn (string $route, array $parameters = []): string => match ($route) {
                 'bolt_discussion_api_csrf_token' => '/discussion/api/csrf/token',
-                'bolt_discussion_api_list' => '/discussion/api/' . $parameters['reference'],
+                'bolt_discussion_api_list' => '/discussion/api/' . (is_string($parameters['reference'] ?? null) ? $parameters['reference'] : ''),
                 'bolt_discussion_api_reaction' => '/discussion/api/comment/0/reaction',
                 'bolt_discussion_api_delete' => '/discussion/api/comment/0',
                 default => '/',
@@ -403,7 +410,7 @@ class DiscussionExtensionTest extends TestCase
             $config,
             $manager,
             $visitor,
-            $this->createMock(DiscussionCommentRepository::class),
+            self::createStub(DiscussionCommentRepository::class),
             $router,
             $csrf,
             $translator,
@@ -430,6 +437,9 @@ class DiscussionExtensionTest extends TestCase
             ) {
             }
 
+            /**
+             * @param array<mixed> $parameters
+             */
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 $this->transKeys[] = (string) $id;
