@@ -60,7 +60,7 @@ class TranslationCatalogueTest extends TestCase
         );
 
         foreach ($translatedMessages as $key => $message) {
-            self::assertNotSame('', trim($message), sprintf('Translation "%s" is empty for locale "%s".', $key, $locale));
+            self::assertNotSame('', mb_trim($message), sprintf('Translation "%s" is empty for locale "%s".', $key, $locale));
             self::assertSame(
                 $this->placeholders($englishMessages[$key]),
                 $this->placeholders($message),
