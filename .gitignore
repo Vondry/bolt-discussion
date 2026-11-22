@@ -1,10 +1,21 @@
+### OS files
+.DS_Store
+Thumbs.db
+
+### IDEs and editors
+.idea/
+.vscode/
+
+### Local AI tooling
+.bob/
+.claude/settings.local.json
+
+### Dependencies (a library does not commit composer.lock; package-lock.json is committed)
 /vendor/
 /node_modules/
 /composer.lock
+
+### Caches, logs and test output
+/var/
 /.phpunit.cache/
 /.phpunit.result.cache
-/var
-.bob
-.idea
-.claude
-.DS_Store
