@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.5] - 2026-11-22
+
+### Changed
+
+- The Composer package leaves out the tests, CI and tool configuration (`.gitattributes` with
+  `export-ignore`), as well as the Encore sources in `assets/`. The built files in `public/` still ship.
+
+### Fixed
+
+- Composer no longer installs the extension next to a `bolt/core` outside 6.x
+  (`conflict: <6.0 || >=7.0`), like the other extensions.
+- `DiscussionApiController` calls the `ExtensionController` constructor, so its Bolt
+  configuration is set.
+
+### Development
+
+- PHPStan also analyses the tests, with `phpstan-strict-rules` and `phpstan-phpunit`; ECS and
+  Rector check the tests too, and PHPUnit runs in random order and fails on warnings, notices
+  and deprecations.
+- Dependencies updated. The runtime requirements are unchanged; for development, PHPStan 2.3.7,
+  phpstan-phpunit 2.1.2, phpstan-strict-rules 2.1.1 and Rector 2.8.5.
+- ECS, PHPStan, PHPUnit and Rector use the same configuration as the other extensions.
+- GitHub Actions are pinned to commit SHAs.
+
 ## [2.1.4] - 2026-11-21
 
 ### Changed
