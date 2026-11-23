@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.1.6] - 2026-11-23
+
 ### Development
 
 - CI uses the same workflows as the other extensions: PHPStan once per PHP
