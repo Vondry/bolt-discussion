@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Development
+
+- CI uses the same workflows as the other extensions: PHPStan once per PHP
+  version, ECS, `composer validate`, `composer audit` and actionlint once, a
+  syntax check on PHP 8.2 to 8.5 and at least 95 % line coverage; newer pushes
+  cancel older runs.
+- `SECURITY.md`, `.editorconfig`, and `keywords`, `support` and `funding` in
+  `composer.json`.
+
 ## [2.1.5] - 2026-11-22
 
 ### Changed

@@ -207,3 +207,30 @@ ship for **English, Czech, German, Polish and Dutch** in `translations/`
 Frontend JS strings are translated server-side and passed to the widget via a
 `data-i18n` attribute. To add a locale, drop a `bolt_discussion.<locale>.yaml`
 file in `translations/` and clear the cache.
+
+## Development
+
+```bash
+composer install
+npm ci
+
+vendor/bin/phpunit
+vendor/bin/ecs check
+vendor/bin/phpstan analyse --memory-limit=1G
+vendor/bin/rector process --dry-run
+
+npm run test:js        # node --test, tests/js/
+npm run build          # assets/ → public/build/ (commit the result)
+```
+
+To try it in a Bolt project from a local checkout:
+
+```bash
+composer config repositories.bolt-discussion '{"type":"path","url":"../bolt-discussion"}'
+composer require tomvondracek/bolt-discussion:@dev
+bin/console extensions:configure --with-config
+```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
