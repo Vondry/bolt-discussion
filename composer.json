@@ -3,10 +3,22 @@
     "description": "📦 Pluggable, themeable discussion / comments module for Bolt CMS 6 (replies, reactions, async submit, REST polling).",
     "type": "bolt-extension",
     "license": "MIT",
+    "keywords": ["bolt", "bolt-extension", "comments", "discussion", "reactions", "moderation"],
     "authors": [
         {
             "name": "Tomáš Vondráček",
             "email": "tomasvondrac@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/Vondry/bolt-discussion/issues",
+        "source": "https://github.com/Vondry/bolt-discussion",
+        "security": "https://github.com/Vondry/bolt-discussion/security/policy"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/Vondry"
         }
     ],
     "require": {
