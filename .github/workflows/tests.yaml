@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch or pull request makes the older run moot.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   COMPOSER_CACHE_DIR: /tmp/composer-cache
 
@@ -48,7 +53,6 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: json, mbstring, pdo, curl, pdo_sqlite
           coverage: none
-          tools: symfony-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -60,4 +64,49 @@ jobs:
 
       - run: composer install --no-progress --no-interaction
 
+      # Every file parses on this version: PHPStan reads code with a parser of
+      # its own and does not notice syntax of a newer PHP (`new Foo()->bar()`).
+      - name: Syntax
+        run: find src tests -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -d display_errors=stderr -l > /dev/null
+
       - run: vendor/bin/phpunit --colors=always
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    env:
+      PHP_VERSION: 8.4
+      # Minimum line coverage of src/, in percent.
+      MIN_COVERAGE: 95
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: json, mbstring, pdo, curl, pdo_sqlite
+          coverage: pcov
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.COMPOSER_CACHE_DIR }}
+          key: ${{ runner.os }}-${{ env.PHP_VERSION }}-${{ hashFiles('**/composer.json') }}
+
+      - run: composer install --no-progress --no-interaction
+
+      - run: vendor/bin/phpunit --colors=always --coverage-text --coverage-clover=var/coverage.xml
+
+      - name: Check minimum coverage
+        run: |
+          # The `$` are PHP's, not the shell's.
+          # shellcheck disable=SC2016
+          php -r '
+            $metrics = simplexml_load_file("var/coverage.xml")->project->metrics;
+            $coverage = 100 * (int) $metrics["coveredstatements"] / max(1, (int) $metrics["statements"]);
+            printf("Line coverage: %.2f%% (minimum %d%%)\n", $coverage, getenv("MIN_COVERAGE"));
+            exit($coverage < (float) getenv("MIN_COVERAGE") ? 1 : 0);
+          '
